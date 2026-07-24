@@ -47,6 +47,33 @@ Al ingresar el cheque posfechado, JDE genera:
 | Observación | `Explicación -observación-` | *(nombre del banco)* |
 | Auditoría | `ID usuario` · `Hora actz` · `ID estn trabajo` | `ROBGOMEZ` · `13:31:06` · `SVRE1DAPP` |
 
+## Contabilización (reporte R09801)
+
+Al **contabilizar el batch** (`DB 671247`), JDE ejecuta el post del Libro Mayor
+(`R09801`) y genera el asiento contable. Este es el asiento del ejemplo:
+
+| Doc | Tipo | Cuenta | Descripción de la cuenta | Débito | Crédito |
+|-----|------|--------|--------------------------|-------:|--------:|
+| `54356` | **R1** | `1.110209.02` | Efectos / Cheques posfechados por cobrar (*"Cobro efecto — CXC CHEQUE POSFECHADO INGRESO"*) | 666.00 | |
+| `54356` | **AE** | `1.110205.01` | Cuentas por cobrar clientes (*"Compen. por doc RC 0054356"*) | | 666.00 |
+| | | | **Totales (tipo LM `AA`)** | **666.00** | **666.00** |
+
+**Interpretación contable:** es una **reclasificación dentro del activo** de
+Cuentas por Cobrar. El asiento **debita** la cuenta de efectos/cheques
+posfechados (`1.110209.02`) y **acredita** la CxC comercial (`1.110205.01`): el
+saldo del cliente deja de estar como "factura por cobrar" y pasa a estar
+representado por el efecto (el cheque en cartera). **No se registra efectivo ni
+ingreso** — es coherente con que el cheque aún no se cobra (posfechado).
+
+Notas:
+- El documento **`R1`** es el efecto (lado débito); el **`AE`** (*asiento
+  automático*) es la contrapartida generada por el post a la CxC.
+- Las cuentas (`1.110209.02`, `1.110205.01`) las determinan las **AAIs**
+  (instrucciones de contabilización automática) de efectos — dato clave para
+  configurar/validar la automatización.
+- El post confirma que además de `F03B13` se afectan las tablas de LM:
+  **`F0911`** (detalle de asientos) y **`F0902`** (saldos de cuentas).
+
 ## Relación con FinancePro
 
 En el flujo de FinancePro, los cheques marcados **POSFECHADO** se consolidan
@@ -80,5 +107,9 @@ las vías habituales en JDE (de más a menos recomendable) son:
    efecto **a cuenta / no aplicado**?
 4. ¿El **número de efecto** lo asigna JDE (next numbers) o proviene del número
    del cheque físico?
-5. Además de `F03B13`, ¿qué otras tablas confirman que se afectan?
-   (`F03B14` detalle, `F03B11` factura, `F0911` asientos de LM.)
+5. Tablas afectadas: el post (`R09801`) **confirma** que se escriben `F0911`
+   (asientos) y `F0902` (saldos). Falta confirmar si también se tocan `F03B14`
+   (detalle de aplicación) y `F03B11` (factura), lo que depende de la pregunta 3.
+6. ¿Las cuentas `1.110209.02` (efectos) y `1.110205.01` (CxC clientes) están
+   fijadas por **AAI**? ¿Qué AAI/renglón las controla? (Para replicar la
+   parametrización al automatizar.)
