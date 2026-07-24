@@ -37,6 +37,8 @@ uvicorn app.main:app --reload
 
 - API: <http://localhost:8000/api>
 - Documentación interactiva (Swagger): <http://localhost:8000/docs>
+- **Front-end conectado**: <http://localhost:8000/app/> (se sirve el
+  `frontend/index.html`, que ya consume esta API en lugar de `localStorage`).
 - Al arrancar se crean las tablas y se cargan 3 valijas de demostración
   (idénticas al estado inicial del front-end).
 
@@ -134,5 +136,6 @@ backend/
 - **ERP**: implementar `ErpClient._post_remoto` (endpoint de asientos) y
   configurar `ERP_BASE_URL`/`ERP_TOKEN`. La estructura del asiento ya se arma
   localmente y cuadra (debe = haber).
-- **Front-end**: reemplazar el `localStorage` por llamadas `fetch` a esta API
-  (ver `docs/API_FRONTEND.md`).
+- **Front-end**: ✅ ya conectado — `frontend/index.html` consume esta API
+  (creación, ciclo de custodia por QR y depósito). Se sirve en `/app` cuando el
+  repo está disponible. Ver `docs/API_FRONTEND.md`.

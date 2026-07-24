@@ -21,9 +21,12 @@ matriz, con segregación de cheques e integraciones hacia Tableau y el ERP.
 
 ```
 ├── backend/     API REST en FastAPI (lógica de negocio + integraciones)  ← ver backend/README.md
-├── frontend/    Front-end estático de referencia (SPA con Tailwind, jsPDF, QRCode.js)
+├── frontend/    SPA (Tailwind, jsPDF, QRCode.js) que consume la API (sin localStorage)
 └── docs/        Manual técnico, JSON de ejemplo y mapeo Front-end ↔ API
 ```
+
+Con el backend en marcha, el front-end queda disponible en
+<http://localhost:8000/app/> (o ábrelo como archivo y apuntará a `localhost:8000`).
 
 ## Inicio rápido (backend)
 

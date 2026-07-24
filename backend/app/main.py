@@ -1,9 +1,11 @@
 """Punto de entrada de la API FinancePro (FastAPI)."""
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from . import __version__
 from .config import settings
@@ -35,10 +37,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# El navegador no permite credenciales junto con orígenes "*"; se habilitan
+# solo cuando se listan orígenes explícitos en CORS_ORIGINS.
+_allow_credentials = settings.cors_origins != ["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
-    allow_credentials=True,
+    allow_credentials=_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -62,3 +67,10 @@ def raiz():
 @app.get("/health", tags=["Sistema"], summary="Health check")
 def health():
     return {"status": "ok"}
+
+
+# Sirve el front-end de referencia en /app cuando está disponible en el repo
+# (en la imagen Docker solo se copia app/, por lo que este montaje se omite).
+_frontend_dir = Path(__file__).resolve().parents[2] / "frontend"
+if _frontend_dir.is_dir():
+    app.mount("/app", StaticFiles(directory=_frontend_dir, html=True), name="frontend")

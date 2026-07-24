@@ -1,8 +1,23 @@
 # Mapeo Front-end ↔ API
 
-Guía para conectar el front-end estático (`frontend/index.html`, que hoy usa
-`localStorage`) con el backend FastAPI. Cada función JS del front tiene su
-endpoint equivalente.
+> **Estado: ya implementado.** `frontend/index.html` consume esta API
+> directamente (se eliminó `localStorage`). Este documento describe cómo quedó
+> conectado. Los ejemplos de código sirven de referencia de la implementación.
+
+## Cómo ejecutarlo
+
+1. Levanta el backend (`cd backend && uvicorn app.main:app --reload`).
+2. Abre el front-end de una de estas formas:
+   - **Servido por el backend** (recomendado, sin CORS): <http://localhost:8000/app/>.
+     El front detecta el mismo origen automáticamente.
+   - **Como archivo** (`file://frontend/index.html`): usa `http://localhost:8000/api`
+     por defecto (el backend permite CORS con orígenes `*`).
+   - **Otro servidor/puerto**: define el origen antes de cargar el script:
+     `window.FINANCE_API_BASE = "http://tu-host:8000/api";`
+
+---
+
+Cada función JS del front tiene su endpoint equivalente.
 
 | Acción en el front-end (JS)                     | Endpoint del backend                              |
 |-------------------------------------------------|---------------------------------------------------|

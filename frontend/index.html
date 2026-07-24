@@ -366,9 +366,14 @@
             
             <div id="qrcode-container" class="mx-auto border-4 border-indigo-50 rounded-2xl p-4 mb-6 inline-block bg-white shadow-inner"></div>
             
-            <div class="p-3 bg-purple-50 border border-purple-100 rounded-xl mb-6 text-left">
+            <div class="p-3 bg-purple-50 border border-purple-100 rounded-xl mb-4 text-left">
                 <p class="text-[8px] font-black text-purple-700 uppercase tracking-widest leading-none mb-1">Nota Operativa:</p>
                 <p class="text-[10px] text-purple-600 leading-tight">El mensajero de transporte de valores debe validar este código QR para registrar la recolección física en la central.</p>
+            </div>
+
+            <div class="mb-6 text-left">
+                <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Mensajero / Transportadora</label>
+                <input id="qr-mensajero" type="text" value="Transporte de Valores" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-indigo-500">
             </div>
 
             <button onclick="simulateCourierScan()" class="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-2xl text-xs shadow-lg hover:bg-indigo-700 transition-colors">
@@ -393,7 +398,12 @@
                 </div>
             </div>
 
-            <button id="upload-btn-confirm" onclick="executeCierreBancoConfirm()" class="w-full mt-6 bg-emerald-600 text-white font-bold py-3.5 rounded-2xl text-xs hover:bg-emerald-700 transition-colors opacity-50 pointer-events-none">
+            <div class="mt-6 text-left">
+                <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Banco del Depósito</label>
+                <input id="upload-banco" type="text" placeholder="Ej: PICHINCHA" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+
+            <button id="upload-btn-confirm" onclick="executeCierreBancoConfirm()" class="w-full mt-4 bg-emerald-600 text-white font-bold py-3.5 rounded-2xl text-xs hover:bg-emerald-700 transition-colors opacity-50 pointer-events-none">
                 Confirmar y Registrar Cierre
             </button>
             <button onclick="document.getElementById('modal-upload').style.display = 'none';" class="mt-4 text-[9px] font-black text-slate-300 hover:text-slate-400 uppercase tracking-widest block mx-auto">Cancelar</button>
@@ -402,7 +412,33 @@
 
     <!-- SCRIPT DE NEGOCIO -->
     <script>
-        const { jsPDF } = window.jspdf;
+        // --- Configuración de la API ---
+        // Por defecto usa el mismo origen (útil al servir el front desde el
+        // backend en /app, en cualquier puerto). Para file:// cae a localhost:8000.
+        // Sobreescribible antes de este bloque definiendo:
+        //   window.FINANCE_API_BASE = "http://mi-servidor:8000/api";
+        const API_BASE = window.FINANCE_API_BASE
+            || ((location.protocol === 'http:' || location.protocol === 'https:')
+                    ? location.origin + '/api'
+                    : 'http://localhost:8000/api');
+
+        // Nombre por defecto del mensajero de transporte de valores.
+        const DEFAULT_MENSAJERO = 'Transporte de Valores';
+
+        // Wrapper de fetch: lanza un Error con el `detail` del backend si falla.
+        async function apiFetch(path, options = {}) {
+            const res = await fetch(`${API_BASE}${path}`, {
+                headers: { 'Content-Type': 'application/json' },
+                ...options,
+            });
+            let body = null;
+            try { body = await res.json(); } catch (_) { /* respuesta sin cuerpo */ }
+            if (!res.ok) {
+                const msg = (body && (body.detail || body.message)) || `Error ${res.status}`;
+                throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+            }
+            return body;
+        }
 
         // --- Estructura de Denominaciones ---
         const NOMENCLATURES_DEF = [
@@ -421,7 +457,7 @@
         // --- Estado Global ---
         let state = {
             view: 'dashboard',
-            history: JSON.parse(localStorage.getItem('finance_history_v6_data') || '[]'),
+            history: [],                 // se carga desde la API
             currentCierre: {
                 counts: new Array(NOMENCLATURES_DEF.length).fill(0),
                 payments: {},
@@ -429,63 +465,68 @@
                 checks: []
             },
             tableFilter: 'ALL',
-            user: 'Cajero_01_Sede_Urbana',
+            user: 'Cajero_01',
             activeModalValija: null,
+            activeQrToken: null,         // token QR firmado por el backend
+            activeBankReceipt: null,     // data-URI de la papeleta sellada
             confirmCallback: null
         };
 
-        // --- Set de Datos de Prueba (Simulación Inicial si está vacío) ---
-        if (state.history.length === 0) {
-            state.history = [
-                {
-                    id: "VAL-882910",
-                    date: "11/5/2026, 09:15:32",
-                    user: "Cajero_01",
-                    cash: 450.00,
-                    counts: [15, 10, 8, 10, 0, 0, 0, 0, 0, 0],
-                    payments: { tarjeta: 200, deUna: 120, delivery: 85 },
-                    vuelto: 50.00,
-                    checks: [
-                        { id: 1, amount: "125.00", bank: "PICHINCHA", type: "ESTANDAR", ref: 882012 },
-                        { id: 2, amount: "300.00", bank: "PRODUBANCO", type: "POSFECHADO", ref: 3102 }
-                    ],
-                    status: 'ENVIADA'
+        // --- Adaptadores API <-> modelo interno del front-end ---
+        // Reconstruye el arreglo de conteos (indexado por NOMENCLATURES_DEF)
+        // a partir de la lista [{denominacion, cantidad}] que devuelve la API.
+        function countsFromNomenclaturas(noms) {
+            const counts = new Array(NOMENCLATURES_DEF.length).fill(0);
+            const used = new Array(NOMENCLATURES_DEF.length).fill(false);
+            (noms || []).forEach(n => {
+                let idx = NOMENCLATURES_DEF.findIndex((d, i) => !used[i] && Number(d.value) === Number(n.denominacion));
+                if (idx === -1) idx = NOMENCLATURES_DEF.findIndex(d => Number(d.value) === Number(n.denominacion));
+                if (idx !== -1) { counts[idx] = n.cantidad; used[idx] = true; }
+            });
+            return counts;
+        }
+
+        // Traduce una valija de la API al modelo interno que usan las vistas.
+        function mapValijaFromApi(v) {
+            return {
+                id: v.valija_id,
+                date: v.fecha ? new Date(v.fecha).toLocaleString() : '',
+                lastUpdate: v.custodia_en ? new Date(v.custodia_en).toLocaleString()
+                          : (v.depositada_en ? new Date(v.depositada_en).toLocaleString() : null),
+                user: v.usuario,
+                cash: Number(v.efectivo_total) || 0,
+                counts: countsFromNomenclaturas(v.nomenclaturas),
+                payments: {
+                    tarjeta: Number(v.pagos_adicionales?.tarjeta) || 0,
+                    deUna: Number(v.pagos_adicionales?.de_una) || 0,
+                    delivery: Number(v.pagos_adicionales?.delivery) || 0,
                 },
-                {
-                    id: "VAL-109283",
-                    date: "10/5/2026, 18:20:11",
-                    user: "Cajero_02",
-                    cash: 830.00,
-                    counts: [30, 15, 10, 30, 0, 0, 0, 0, 0, 0],
-                    payments: { tarjeta: 450, deUna: 250, delivery: 150 },
-                    vuelto: 100.00,
-                    checks: [
-                        { id: 3, amount: "650.00", bank: "GUAYAQUIL", type: "ESTANDAR", ref: 99120 }
-                    ],
-                    status: 'CUSTODIA'
-                },
-                {
-                    id: "VAL-662510",
-                    date: "9/5/2026, 14:10:05",
-                    user: "Cajero_01",
-                    cash: 250.00,
-                    counts: [10, 5, 0, 0, 0, 0, 0, 0, 0, 0],
-                    payments: { tarjeta: 100, deUna: 50, delivery: 0 },
-                    vuelto: 20.00,
-                    checks: [],
-                    status: 'DEPOSITADA'
-                }
-            ];
-            localStorage.setItem('finance_history_v6_data', JSON.stringify(state.history));
+                vuelto: Number(v.fondo_vuelto) || 0,
+                checks: (v.cheques || []).map(c => ({
+                    id: c.id, amount: Number(c.monto).toFixed(2),
+                    bank: c.banco, type: c.tipo, ref: c.referencia,
+                })),
+                status: v.estado,
+            };
+        }
+
+        // Carga (o recarga) el historial completo desde la API.
+        async function loadHistory() {
+            try {
+                const data = await apiFetch('/valijas');
+                state.history = data.map(mapValijaFromApi);
+            } catch (err) {
+                showNotification(`No se pudo conectar con la API: ${err.message}`, 'error');
+                state.history = [];
+            }
         }
 
         // --- Inicialización de la Aplicación ---
-        window.onload = () => {
+        window.onload = async () => {
             renderCashFormGrid();
             setupPaymentFormListeners();
-            refreshScreenUIs();
             document.getElementById('header-date').innerText = new Date().toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' }).toUpperCase();
-            
+
             // Setup Confirm modal click events
             document.getElementById('confirm-btn-cancel').onclick = () => {
                 document.getElementById('custom-confirm-modal').classList.add('hidden');
@@ -498,6 +539,10 @@
                     state.confirmCallback = null;
                 }
             };
+
+            // Cargar los datos reales desde el backend.
+            await loadHistory();
+            refreshScreenUIs();
         };
 
         // --- Reemplazos de Alertas y Mensajes ---
@@ -652,41 +697,50 @@
                 return;
             }
 
-            showCustomConfirm("¿Desea cerrar la caja y generar el manifiesto de depósito?", () => {
-                const valijaID = `VAL-${Math.floor(100000 + Math.random() * 900000)}`;
-                const newClosure = {
-                    id: valijaID,
-                    date: new Date().toLocaleString(),
-                    user: state.user,
-                    cash: cashSum,
-                    counts: [...state.currentCierre.counts],
-                    payments: { ...state.currentCierre.payments },
-                    vuelto: state.currentCierre.vuelto,
-                    checks: [...state.currentCierre.checks],
-                    status: 'ENVIADA'
+            showCustomConfirm("¿Desea cerrar la caja y generar el manifiesto de depósito?", async () => {
+                const payload = {
+                    usuario: state.user,
+                    nomenclaturas: NOMENCLATURES_DEF
+                        .map((n, i) => ({ denominacion: n.value, cantidad: state.currentCierre.counts[i] }))
+                        .filter(n => n.cantidad > 0),
+                    pagos_adicionales: {
+                        tarjeta: state.currentCierre.payments.tarjeta || 0,
+                        de_una: state.currentCierre.payments.deUna || 0,
+                        delivery: state.currentCierre.payments.delivery || 0,
+                    },
+                    fondo_vuelto: state.currentCierre.vuelto || 0,
+                    cheques: state.currentCierre.checks.map(c => ({
+                        banco: c.bank, monto: Number(c.amount), tipo: c.type, referencia: String(c.ref),
+                    })),
                 };
 
-                state.history.unshift(newClosure);
-                localStorage.setItem('finance_history_v6_data', JSON.stringify(state.history));
-                
-                // Disparar generación automática del Manifiesto PDF
-                generatePDFManifiesto(newClosure);
+                try {
+                    const created = await apiFetch('/valijas', {
+                        method: 'POST', body: JSON.stringify(payload),
+                    });
 
-                // Resetear Formulario
-                state.currentCierre = {
-                    counts: new Array(NOMENCLATURES_DEF.length).fill(0),
-                    payments: {},
-                    vuelto: 0,
-                    checks: []
-                };
-                renderCashFormGrid();
-                renderFormChecksList();
-                document.getElementById('form-total-cash').innerText = "$0.00";
-                document.querySelectorAll('.form-pay-input').forEach(input => input.value = '');
-                document.getElementById('form-vuelto').value = '';
+                    // Disparar generación automática del Manifiesto PDF
+                    generatePDFManifiesto(mapValijaFromApi(created));
 
-                showNotification(`Valija ${valijaID} generada como ENVIADA.`);
-                navigate('dashboard');
+                    // Resetear Formulario
+                    state.currentCierre = {
+                        counts: new Array(NOMENCLATURES_DEF.length).fill(0),
+                        payments: {},
+                        vuelto: 0,
+                        checks: []
+                    };
+                    renderCashFormGrid();
+                    renderFormChecksList();
+                    document.getElementById('form-total-cash').innerText = "$0.00";
+                    document.querySelectorAll('.form-pay-input').forEach(input => input.value = '');
+                    document.getElementById('form-vuelto').value = '';
+
+                    await loadHistory();
+                    showNotification(`Valija ${created.valija_id} generada como ENVIADA.`);
+                    navigate('dashboard');
+                } catch (err) {
+                    showNotification(`Error al cerrar caja: ${err.message}`, 'error');
+                }
             });
         }
 
@@ -863,39 +917,64 @@
         }
 
         // --- Flujo de Entregas mediante QR (Mensajero) ---
-        function openCourierQRModal(id) {
+        async function openCourierQRModal(id) {
             state.activeModalValija = state.history.find(v => v.id === id);
             document.getElementById('qr-valija-id').innerText = `IDENTIFICACIÓN: ${id}`;
             document.getElementById('qrcode-container').innerHTML = '';
-            
-            // Render del QR dinámico
-            new QRCode(document.getElementById("qrcode-container"), {
-                text: `CUSTODY-TRANSFER-CONFIRMATION-${id}`,
-                width: 140,
-                height: 140,
-                colorDark : "#0f172a",
-                colorLight : "#ffffff"
-            });
+            state.activeQrToken = null;
 
-            document.getElementById('modal-qr').style.display = 'flex';
+            try {
+                // El backend firma el token de traspaso (HMAC-SHA256).
+                const qr = await apiFetch(`/valijas/${id}/qr`);
+                state.activeQrToken = qr.token;
+
+                // El mensajero escanea el token firmado para validar la recolección.
+                new QRCode(document.getElementById("qrcode-container"), {
+                    text: qr.token,
+                    width: 140,
+                    height: 140,
+                    colorDark : "#0f172a",
+                    colorLight : "#ffffff"
+                });
+
+                document.getElementById('modal-qr').style.display = 'flex';
+            } catch (err) {
+                showNotification(`No se pudo generar el QR: ${err.message}`, 'error');
+            }
         }
 
         function simulateCourierScan() {
-            showCustomConfirm("¿Desea simular la validación del QR para el transportador?", () => {
-                updateValijaStatus(state.activeModalValija.id, 'CUSTODIA');
-                document.getElementById('modal-qr').style.display = 'none';
-                showNotification(`Valija ${state.activeModalValija.id} transferida a custodia del transportador.`);
-                navigate('dashboard');
+            const valija = state.activeModalValija;
+            const mensajeroInput = document.getElementById('qr-mensajero');
+            const mensajero = (mensajeroInput && mensajeroInput.value.trim()) || DEFAULT_MENSAJERO;
+
+            showCustomConfirm("¿Desea validar el QR y traspasar la valija al mensajero?", async () => {
+                try {
+                    await apiFetch(`/valijas/${valija.id}/custodia`, {
+                        method: 'POST',
+                        body: JSON.stringify({ mensajero, qr_token: state.activeQrToken }),
+                    });
+                    document.getElementById('modal-qr').style.display = 'none';
+                    await loadHistory();
+                    showNotification(`Valija ${valija.id} transferida a custodia de ${mensajero}.`);
+                    navigate('dashboard');
+                } catch (err) {
+                    showNotification(`Error en el traspaso: ${err.message}`, 'error');
+                }
             });
         }
 
         // --- Flujo de Cierre con el Banco ---
         function openBankConfirmationModal(id) {
             state.activeModalValija = state.history.find(v => v.id === id);
+            state.activeBankReceipt = null;
             document.getElementById('upload-valija-id').innerText = `DEPÓSITO BANCARIO: ${id}`;
             document.getElementById('upload-img-preview').classList.add('hidden');
             document.getElementById('upload-idle').classList.remove('hidden');
-            
+
+            const bancoInput = document.getElementById('upload-banco');
+            if (bancoInput) bancoInput.value = '';
+
             const confirmBtn = document.getElementById('upload-btn-confirm');
             confirmBtn.classList.add('opacity-50', 'pointer-events-none');
 
@@ -906,6 +985,7 @@
             if (input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = e => {
+                    state.activeBankReceipt = e.target.result;   // data-URI de la papeleta
                     document.getElementById('upload-img-preview').src = e.target.result;
                     document.getElementById('upload-img-preview').classList.remove('hidden');
                     document.getElementById('upload-idle').classList.add('hidden');
@@ -918,22 +998,27 @@
         }
 
         function executeCierreBancoConfirm() {
-            showCustomConfirm("¿Confirmar que la valija fue depositada y subir comprobante?", () => {
-                updateValijaStatus(state.activeModalValija.id, 'DEPOSITADA');
-                document.getElementById('modal-upload').style.display = 'none';
-                showNotification(`Depósito de la valija ${state.activeModalValija.id} confirmado correctamente.`);
-                navigate('dashboard');
-            });
-        }
+            const valija = state.activeModalValija;
+            const bancoInput = document.getElementById('upload-banco');
+            const banco = (bancoInput && bancoInput.value.trim()) || 'BANCO';
 
-        function updateValijaStatus(id, newStatus) {
-            const idx = state.history.findIndex(v => v.id === id);
-            if (idx !== -1) {
-                state.history[idx].status = newStatus;
-                state.history[idx].lastUpdate = new Date().toLocaleString();
-                localStorage.setItem('finance_history_v6_data', JSON.stringify(state.history));
-                refreshScreenUIs();
-            }
+            showCustomConfirm("¿Confirmar que la valija fue depositada y subir comprobante?", async () => {
+                try {
+                    await apiFetch(`/valijas/${valija.id}/deposito`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            banco,
+                            comprobante: state.activeBankReceipt || 'comprobante-adjunto',
+                        }),
+                    });
+                    document.getElementById('modal-upload').style.display = 'none';
+                    await loadHistory();
+                    showNotification(`Depósito de la valija ${valija.id} confirmado (asiento ERP registrado).`);
+                    navigate('dashboard');
+                } catch (err) {
+                    showNotification(`Error al confirmar depósito: ${err.message}`, 'error');
+                }
+            });
         }
 
         // --- Detalle Auditable y Reimpresión ---
@@ -992,6 +1077,13 @@
 
         // --- Generación Real de Documentos PDF (Papeletas) ---
         function generatePDFManifiesto(v) {
+            // Adquisición diferida de jsPDF: si el CDN no cargó, la app sigue
+            // funcionando y solo se omite la generación del PDF.
+            if (!window.jspdf) {
+                showNotification("Generador de PDF no disponible (revise su conexión).", "error");
+                return;
+            }
+            const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             const checksEst = v.checks.filter(c => c.type === 'ESTANDAR');
             const checksPos = v.checks.filter(c => c.type === 'POSFECHADO');
