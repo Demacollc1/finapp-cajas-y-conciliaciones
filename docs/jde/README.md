@@ -11,7 +11,8 @@ para automatizarlo.
 
 | # | Proceso | Estado | Doc |
 |---|---------|--------|-----|
-| 1 | Ingreso de cheques posfechados (efectos A/R) | En análisis | [01-ingreso-cheques-posfechados.md](01-ingreso-cheques-posfechados.md) |
+| 1 | Ingreso de cheques posfechados (efectos A/R) + contabilización | En análisis | [01-ingreso-cheques-posfechados.md](01-ingreso-cheques-posfechados.md) |
+| 2 | Registro / remesa de efectos (envío al banco) | En análisis | [02-registro-remesa-efectos.md](02-registro-remesa-efectos.md) |
 
 > Documento vivo: se irá ampliando con cada paso que analicemos.
 
