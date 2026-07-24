@@ -1,0 +1,27 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # Descomenta para usar PostgreSQL en lugar de SQLite:
+      # DATABASE_URL: postgresql+psycopg://finapp:finapp@db:5432/finapp
+      QR_SECRET: cambia-esta-clave-en-produccion
+      SEED_ON_STARTUP: "true"
+    # depends_on:
+    #   - db
+
+  # Base de datos opcional para producción.
+  # db:
+  #   image: postgres:16-alpine
+  #   environment:
+  #     POSTGRES_USER: finapp
+  #     POSTGRES_PASSWORD: finapp
+  #     POSTGRES_DB: finapp
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+
+# volumes:
+#   pgdata:

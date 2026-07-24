@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinancePro - Control de Caja y Valijas</title>
+    <!-- Tailwind CSS para diseño moderno y responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- jsPDF para generación de reportes e impresión de papeletas en caliente -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- QRCode.js para generación de comprobantes para el transportador -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Google Fonts para tipografía corporativa -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .sidebar-active {
+            @apply bg-indigo-600/10 text-indigo-400 border-r-4 border-indigo-500 font-semibold;
+        }
+        .view-section {
+            display: none;
+        }
+        .view-section.active {
+            display: block;
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            @apply bg-slate-300 rounded-full;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 antialiased overflow-x-hidden">
+
+    <!-- Sistema de Notificaciones Toast Personalizadas (Reemplazo de alert) -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[100] flex flex-col gap-3 pointer-events-none"></div>
+
+    <!-- Modal de Confirmación Corporativo (Reemplazo de confirm) -->
+    <div id="custom-confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[90] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border border-slate-100 transform transition-all scale-95 duration-300">
+            <div class="w-12 h-12 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center mb-4">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+            <h3 class="text-base font-bold text-slate-900 mb-2">¿Confirmar Acción?</h3>
+            <p id="confirm-modal-text" class="text-xs text-slate-500 mb-6 leading-relaxed">¿Está completamente seguro de continuar con este proceso operativo?</p>
+            <div class="flex gap-3">
+                <button id="confirm-btn-cancel" class="flex-1 py-3 px-4 bg-slate-100 text-slate-700 font-bold rounded-2xl text-xs hover:bg-slate-200 transition-colors">Cancelar</button>
+                <button id="confirm-btn-ok" class="flex-1 py-3 px-4 bg-indigo-600 text-white font-bold rounded-2xl text-xs hover:bg-indigo-700 transition-colors">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menú Lateral -->
+    <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-slate-900 text-slate-400 transition-transform -translate-x-full lg:translate-x-0 z-50 shadow-2xl border-r border-slate-800 flex flex-col justify-between">
+        <div class="p-6">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="bg-indigo-600 p-2.5 rounded-2xl shadow-lg shadow-indigo-600/30">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <span class="text-base font-extrabold text-white tracking-tight">FINANCE<span class="text-indigo-500">PRO</span></span>
+                    <p class="text-[8px] font-bold text-indigo-400 uppercase tracking-widest leading-none">Conciliación Total</p>
+                </div>
+            </div>
+            
+            <nav class="space-y-1">
+                <button onclick="navigate('dashboard')" class="nav-btn w-full flex items-center gap-3 p-3.5 rounded-2xl hover:bg-slate-800/50 hover:text-white transition-all text-left" id="btn-dashboard">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                    <span class="text-xs font-bold uppercase tracking-wider">Dashboard</span>
+                </button>
+                <button onclick="navigate('cierres')" class="nav-btn w-full flex items-center gap-3 p-3.5 rounded-2xl hover:bg-slate-800/50 hover:text-white transition-all text-left" id="btn-cierres">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    <span class="text-xs font-bold uppercase tracking-wider">Mis Cierres</span>
+                </button>
+                <button onclick="navigate('valijas')" class="nav-btn w-full flex items-center gap-3 p-3.5 rounded-2xl hover:bg-slate-800/50 hover:text-white transition-all text-left" id="btn-valijas">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span class="text-xs font-bold uppercase tracking-wider">Mis Valijas</span>
+                </button>
+                <button onclick="navigate('confirmaciones')" class="nav-btn w-full flex items-center gap-3 p-3.5 rounded-2xl hover:bg-slate-800/50 hover:text-white transition-all text-left" id="btn-confirmaciones">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span class="text-xs font-bold uppercase tracking-wider">Confirmaciones</span>
+                </button>
+            </nav>
+        </div>
+        
+        <div class="p-6 border-t border-slate-800">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center font-extrabold text-white text-sm" id="avatar-circle">M</div>
+                <div class="overflow-hidden">
+                    <p class="text-xs font-bold text-white truncate" id="side-user">Cajero_01</p>
+                    <p class="text-[9px] text-emerald-400 uppercase font-black tracking-widest">Sede Central</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Overlay Móvil -->
+    <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden z-45 lg:hidden"></div>
+
+    <!-- Contenedor de Vistas -->
+    <div class="lg:ml-64 p-4 lg:p-8 transition-all duration-300">
+        
+        <!-- Header Superior -->
+        <header class="flex justify-between items-center mb-8 bg-white p-4 lg:p-6 rounded-3xl shadow-sm border border-slate-100">
+            <button onclick="toggleSidebar()" class="lg:hidden p-2.5 bg-slate-50 text-slate-700 rounded-xl border hover:bg-slate-100 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <div id="view-title" class="text-lg lg:text-xl font-extrabold text-slate-900 tracking-tight">Estadísticas de Jornada</div>
+            <div class="flex items-center gap-2.5 bg-slate-50 p-2.5 px-4 rounded-2xl border border-slate-100">
+                <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest" id="header-date">11 MAY 2026</span>
+            </div>
+        </header>
+
+        <!-- SECCIÓN 1: DASHBOARD -->
+        <section id="view-dashboard" class="view-section active animate-in fade-in duration-300">
+            <!-- Métricas Clave (KPIs) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
+                <!-- KPI 1: Efectivo Recibido -->
+                <div onclick="filterTable('CASH')" class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 cursor-pointer hover:border-indigo-400 hover:shadow-md transition-all group">
+                    <div class="bg-indigo-50 w-10 h-10 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Efectivo Recibido</p>
+                    <p class="text-xl font-extrabold text-slate-900 font-mono" id="kpi-cash">$0.00</p>
+                </div>
+
+                <!-- KPI 2: Caja Vuelto -->
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 cursor-pointer hover:shadow-md transition-all group">
+                    <div class="bg-rose-50 w-10 h-10 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                        <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Caja Vuelto</p>
+                    <p class="text-xl font-extrabold text-slate-900 font-mono" id="kpi-vuelto">$0.00</p>
+                </div>
+
+                <!-- KPI 3: Valijas en Custodia -->
+                <div onclick="filterTable('CUSTODIA')" class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 cursor-pointer hover:border-purple-400 hover:shadow-md transition-all group">
+                    <div class="bg-purple-50 w-10 h-10 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                    </div>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">En Custodia</p>
+                    <p class="text-xl font-extrabold text-slate-900 font-mono" id="kpi-custodia">0</p>
+                </div>
+
+                <!-- KPI 4: Depósitos No Confirmados -->
+                <div onclick="filterTable('ENVIADA')" class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 cursor-pointer hover:border-amber-400 hover:shadow-md transition-all group">
+                    <div class="bg-amber-50 w-10 h-10 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                        <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    </div>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Sin Confirmar Banco</p>
+                    <p class="text-xl font-extrabold text-slate-900 font-mono" id="kpi-unconfirmed">0</p>
+                </div>
+
+                <!-- KPI 5: Posfechados por Confirmar -->
+                <div onclick="filterTable('POSFECHADO')" class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 cursor-pointer hover:border-cyan-400 hover:shadow-md transition-all group">
+                    <div class="bg-cyan-50 w-10 h-10 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                        <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Posfechados Matriz</p>
+                    <p class="text-xl font-extrabold text-slate-900 font-mono" id="kpi-pos">0</p>
+                </div>
+            </div>
+
+            <!-- Tabla de datos de cierres del día -->
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row gap-4 justify-between sm:items-center">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">Transacciones del Día</h3>
+                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mt-0.5" id="table-filter-indicator">Visualizando: Todo</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="table-search" oninput="renderDashboardTable()" placeholder="Buscar por Valija ID..." class="w-full sm:w-64 p-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium">
+                        <button onclick="clearTableFilters()" class="p-2.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors">Ver Todo</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 text-[9px] font-extrabold text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                            <tr>
+                                <th class="p-4 pl-6">ID Valija</th>
+                                <th class="p-4">Estado</th>
+                                <th class="p-4">Efectivo</th>
+                                <th class="p-4">Tarjetas</th>
+                                <th class="p-4">De Una / Transf</th>
+                                <th class="p-4">Cheques</th>
+                                <th class="p-4 pr-6 text-center">Auditar</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboard-table-body" class="text-xs font-semibold divide-y divide-slate-100 text-slate-700">
+                            <!-- Filas dinámicas -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 2: MIS CIERRES -->
+        <section id="view-cierres" class="view-section animate-in fade-in duration-300">
+            <div class="max-w-3xl mx-auto space-y-6">
+                <!-- Paso 1: Conteo de Dinero -->
+                <div class="bg-white p-6 lg:p-8 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="text-base font-extrabold mb-1 flex items-center gap-3 text-slate-900">
+                        <div class="bg-indigo-50 p-2 rounded-xl text-indigo-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg></div>
+                        1. Conteo de Efectivo
+                    </h2>
+                    <p class="text-xs text-slate-400 mb-6 font-bold uppercase tracking-wide">Ingrese las cantidades por nomenclatura física</p>
+                    
+                    <div id="cash-form-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Nomenclaturas dinámicas generadas en JS -->
+                    </div>
+                    
+                    <div class="mt-6 p-5 bg-slate-900 rounded-2xl flex justify-between items-center text-white">
+                        <span class="font-extrabold uppercase text-[10px] tracking-widest text-slate-400">Total Efectivo Contado</span>
+                        <span id="form-total-cash" class="text-2xl font-black font-mono">$0.00</span>
+                    </div>
+                </div>
+
+                <!-- Paso 2: Métodos de Pago Adicionales -->
+                <div class="bg-white p-6 lg:p-8 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="text-base font-extrabold mb-1 flex items-center gap-3 text-slate-900">
+                        <div class="bg-indigo-50 p-2 rounded-xl text-indigo-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg></div>
+                        2. Otros Métodos de Pago & Deducciones
+                    </h2>
+                    <p class="text-xs text-slate-400 mb-6 font-bold uppercase tracking-wide">Declare transacciones electrónicas del sistema</p>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div>
+                            <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">Tarjeta (Débito/Crédito)</label>
+                            <input type="number" step="0.01" data-pay="tarjeta" class="form-pay-input w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-extrabold text-indigo-500 uppercase mb-1.5 block">De Una / Transferencia</label>
+                            <input type="number" step="0.01" data-pay="deUna" class="form-pay-input w-full p-3.5 bg-indigo-50/20 border border-indigo-100 rounded-2xl font-mono text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-indigo-900" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-extrabold text-orange-500 uppercase mb-1.5 block">App Delivery (Uber/Rappi)</label>
+                            <input type="number" step="0.01" data-pay="delivery" class="form-pay-input w-full p-3.5 bg-orange-50/20 border border-orange-100 rounded-2xl font-mono text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-orange-900" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-extrabold text-rose-500 uppercase mb-1.5 block">Fondo de Vuelto / Suelto (Resta)</label>
+                            <input type="number" step="0.01" id="form-vuelto" class="w-full p-3.5 bg-rose-50 border border-rose-100 rounded-2xl font-mono text-sm outline-none focus:ring-2 focus:ring-rose-500 transition-all text-rose-700 font-bold" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paso 3: OCR Cheques -->
+                <div class="bg-white p-6 lg:p-8 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="text-base font-extrabold mb-1 flex items-center gap-3 text-slate-900">
+                        <div class="bg-indigo-50 p-2 rounded-xl text-indigo-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg></div>
+                        3. Confirmación de Cheques
+                    </h2>
+                    <p class="text-xs text-slate-400 mb-6 font-bold uppercase tracking-wide">Fotografíe los cheques para procesamiento OCR</p>
+                    
+                    <div class="bg-slate-50 border-2 border-dashed border-slate-200 p-8 rounded-3xl text-center relative group transition-colors hover:bg-slate-100/50">
+                        <input type="file" capture="environment" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-10" onchange="runSimulatedOCR(this)">
+                        <div id="form-ocr-idle">
+                            <svg class="w-12 h-12 mx-auto text-slate-300 group-hover:text-indigo-500 mb-4 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m0 11v2m8-8h-1m-11 0H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l-.707.707M12 8a4 4 0 100 8 4 4 0 000-8z"></path></svg>
+                            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Subir o Fotografiar Cheque</p>
+                            <div class="flex gap-2 justify-center mt-4">
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="form-check-posfechado" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600 relative"></div>
+                                    <span class="ml-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">¿Es Cheque Posfechado?</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div id="form-ocr-loading" class="hidden">
+                            <div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                            <p class="text-indigo-600 font-extrabold text-xs italic tracking-wider">Leyendo datos mediante OCR corporativo...</p>
+                        </div>
+                    </div>
+
+                    <div id="form-checks-list" class="mt-6 space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar">
+                        <!-- Cheques añadidos -->
+                    </div>
+                </div>
+
+                <!-- Botón de Envío -->
+                <button onclick="handleFormSubmission()" class="w-full bg-indigo-600 text-white font-extrabold py-5 rounded-3xl shadow-xl hover:bg-indigo-700 hover:shadow-indigo-500/10 active:scale-[0.98] transition-all flex items-center justify-center gap-3 text-sm uppercase tracking-wider">
+                    Generar Papeleta de Depósito & PDF <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                </button>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 3: MIS VALIJAS -->
+        <section id="view-valijas" class="view-section animate-in fade-in duration-300">
+            <div id="valijas-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <!-- Tarjetas de valijas en estado ENVIADA -->
+            </div>
+        </section>
+
+        <!-- SECCIÓN 4: CONFIRMACIONES -->
+        <section id="view-confirmaciones" class="view-section animate-in fade-in duration-300">
+            <div id="confirmaciones-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <!-- Tarjetas de valijas en estado CUSTODIA -->
+            </div>
+        </section>
+
+    </div>
+
+    <!-- MODAL 1: DETALLE DE TRANSACCIÓN (AUDITORÍA) -->
+    <div id="modal-detail" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-[60] items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in duration-200">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div>
+                    <h2 id="modal-valija-id" class="text-base font-extrabold text-slate-900 uppercase">Valija 000</h2>
+                    <p id="modal-date" class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">11 Mayo, 2026 - 15:30</p>
+                </div>
+                <button onclick="closeDetailModal()" class="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                    <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar space-y-6">
+                <!-- Nomenclatura -->
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <h4 class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 border-b pb-2">Desglose de Efectivo</h4>
+                    <div id="modal-nomenclaturas-list" class="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs font-semibold text-slate-600">
+                        <!-- Dinámico -->
+                    </div>
+                </div>
+
+                <!-- Cheques -->
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <h4 class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 border-b pb-2">Cheques Declarados</h4>
+                    <div id="modal-cheques-list" class="space-y-2">
+                        <!-- Dinámico -->
+                    </div>
+                </div>
+
+                <!-- Resumen de Pagos Adicionales -->
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <h4 class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 border-b pb-2">Otros Conceptos</h4>
+                    <div id="modal-otros-list" class="space-y-2 text-xs font-bold text-slate-600">
+                        <!-- Dinámico -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-slate-100 bg-slate-50 flex gap-3">
+                <button onclick="reprintActivePDF()" class="flex-1 py-3 px-4 bg-slate-800 text-white font-bold rounded-2xl text-xs hover:bg-slate-700 transition-colors flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    Reimprimir Papeleta
+                </button>
+                <button onclick="closeDetailModal()" class="flex-1 py-3 px-4 bg-indigo-600 text-white font-bold rounded-2xl text-xs hover:bg-indigo-700 transition-colors">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: QR DE ENTREGA PARA EL TRANSPORTADOR -->
+    <div id="modal-qr" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-[70] items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-3xl text-center max-w-sm w-full shadow-2xl animate-in zoom-in duration-200">
+            <h2 class="text-base font-extrabold text-slate-900 mb-1">Custodia de Valores</h2>
+            <p id="qr-valija-id" class="text-[10px] text-indigo-600 font-extrabold uppercase tracking-wider mb-6">Valija</p>
+            
+            <div id="qrcode-container" class="mx-auto border-4 border-indigo-50 rounded-2xl p-4 mb-6 inline-block bg-white shadow-inner"></div>
+            
+            <div class="p-3 bg-purple-50 border border-purple-100 rounded-xl mb-6 text-left">
+                <p class="text-[8px] font-black text-purple-700 uppercase tracking-widest leading-none mb-1">Nota Operativa:</p>
+                <p class="text-[10px] text-purple-600 leading-tight">El mensajero de transporte de valores debe validar este código QR para registrar la recolección física en la central.</p>
+            </div>
+
+            <button onclick="simulateCourierScan()" class="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-2xl text-xs shadow-lg hover:bg-indigo-700 transition-colors">
+                Confirmar Firma Mensajero
+            </button>
+            <button onclick="document.getElementById('modal-qr').style.display = 'none';" class="mt-4 text-[9px] font-black text-slate-300 hover:text-slate-400 uppercase tracking-widest">Cerrar Ventana</button>
+        </div>
+    </div>
+
+    <!-- MODAL 3: SUBIDA DE PAPELETA SELLADA POR BANCO -->
+    <div id="modal-upload" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-[60] items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-3xl text-center max-w-sm w-full shadow-2xl animate-in zoom-in duration-200">
+            <h2 class="text-base font-extrabold text-slate-900 mb-1">Cierre Final Bancario</h2>
+            <p id="upload-valija-id" class="text-[10px] text-indigo-600 font-extrabold uppercase tracking-wider mb-6">Valija</p>
+            
+            <div class="border-4 border-dashed border-slate-200 rounded-3xl p-6 relative group transition-colors hover:bg-slate-50 cursor-pointer min-h-[160px] flex items-center justify-center">
+                <input type="file" capture="environment" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-10" onchange="handleBankReceiptUpload(this)">
+                <img id="upload-img-preview" class="hidden absolute inset-0 w-full h-full object-cover rounded-2xl">
+                <div id="upload-idle" class="flex flex-col items-center">
+                    <svg class="w-10 h-10 text-slate-300 group-hover:text-emerald-500 mb-2 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Fotografiar Papeleta</p>
+                </div>
+            </div>
+
+            <button id="upload-btn-confirm" onclick="executeCierreBancoConfirm()" class="w-full mt-6 bg-emerald-600 text-white font-bold py-3.5 rounded-2xl text-xs hover:bg-emerald-700 transition-colors opacity-50 pointer-events-none">
+                Confirmar y Registrar Cierre
+            </button>
+            <button onclick="document.getElementById('modal-upload').style.display = 'none';" class="mt-4 text-[9px] font-black text-slate-300 hover:text-slate-400 uppercase tracking-widest block mx-auto">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE NEGOCIO -->
+    <script>
+        const { jsPDF } = window.jspdf;
+
+        // --- Estructura de Denominaciones ---
+        const NOMENCLATURES_DEF = [
+            { label: '$20.00 Billetes', value: 20 },
+            { label: '$10.00 Billetes', value: 10 },
+            { label: '$5.00 Billetes', value: 5 },
+            { label: '$1.00 Billetes', value: 1 },
+            { label: '$1.00 Monedas', value: 1 },
+            { label: '$0.50 Monedas', value: 0.50 },
+            { label: '$0.25 Monedas', value: 0.25 },
+            { label: '$0.10 Monedas', value: 0.10 },
+            { label: '$0.05 Monedas', value: 0.05 },
+            { label: '$0.01 Monedas', value: 0.01 },
+        ];
+
+        // --- Estado Global ---
+        let state = {
+            view: 'dashboard',
+            history: JSON.parse(localStorage.getItem('finance_history_v6_data') || '[]'),
+            currentCierre: {
+                counts: new Array(NOMENCLATURES_DEF.length).fill(0),
+                payments: {},
+                vuelto: 0,
+                checks: []
+            },
+            tableFilter: 'ALL',
+            user: 'Cajero_01_Sede_Urbana',
+            activeModalValija: null,
+            confirmCallback: null
+        };
+
+        // --- Set de Datos de Prueba (Simulación Inicial si está vacío) ---
+        if (state.history.length === 0) {
+            state.history = [
+                {
+                    id: "VAL-882910",
+                    date: "11/5/2026, 09:15:32",
+                    user: "Cajero_01",
+                    cash: 450.00,
+                    counts: [15, 10, 8, 10, 0, 0, 0, 0, 0, 0],
+                    payments: { tarjeta: 200, deUna: 120, delivery: 85 },
+                    vuelto: 50.00,
+                    checks: [
+                        { id: 1, amount: "125.00", bank: "PICHINCHA", type: "ESTANDAR", ref: 882012 },
+                        { id: 2, amount: "300.00", bank: "PRODUBANCO", type: "POSFECHADO", ref: 3102 }
+                    ],
+                    status: 'ENVIADA'
+                },
+                {
+                    id: "VAL-109283",
+                    date: "10/5/2026, 18:20:11",
+                    user: "Cajero_02",
+                    cash: 830.00,
+                    counts: [30, 15, 10, 30, 0, 0, 0, 0, 0, 0],
+                    payments: { tarjeta: 450, deUna: 250, delivery: 150 },
+                    vuelto: 100.00,
+                    checks: [
+                        { id: 3, amount: "650.00", bank: "GUAYAQUIL", type: "ESTANDAR", ref: 99120 }
+                    ],
+                    status: 'CUSTODIA'
+                },
+                {
+                    id: "VAL-662510",
+                    date: "9/5/2026, 14:10:05",
+                    user: "Cajero_01",
+                    cash: 250.00,
+                    counts: [10, 5, 0, 0, 0, 0, 0, 0, 0, 0],
+                    payments: { tarjeta: 100, deUna: 50, delivery: 0 },
+                    vuelto: 20.00,
+                    checks: [],
+                    status: 'DEPOSITADA'
+                }
+            ];
+            localStorage.setItem('finance_history_v6_data', JSON.stringify(state.history));
+        }
+
+        // --- Inicialización de la Aplicación ---
+        window.onload = () => {
+            renderCashFormGrid();
+            setupPaymentFormListeners();
+            refreshScreenUIs();
+            document.getElementById('header-date').innerText = new Date().toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' }).toUpperCase();
+            
+            // Setup Confirm modal click events
+            document.getElementById('confirm-btn-cancel').onclick = () => {
+                document.getElementById('custom-confirm-modal').classList.add('hidden');
+                state.confirmCallback = null;
+            };
+            document.getElementById('confirm-btn-ok').onclick = () => {
+                document.getElementById('custom-confirm-modal').classList.add('hidden');
+                if (state.confirmCallback) {
+                    state.confirmCallback();
+                    state.confirmCallback = null;
+                }
+            };
+        };
+
+        // --- Reemplazos de Alertas y Mensajes ---
+        function showNotification(msg, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `p-4 rounded-2xl shadow-xl text-white text-xs font-bold flex items-center gap-3 animate-in slide-in-from-top-4 duration-300 pointer-events-auto ${
+                type === 'success' ? 'bg-emerald-600' : (type === 'error' ? 'bg-rose-600' : 'bg-indigo-600')
+            }`;
+            toast.innerHTML = `
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>${msg}</span>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('animate-out', 'fade-out');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function showCustomConfirm(message, callback) {
+            document.getElementById('confirm-modal-text').innerText = message;
+            document.getElementById('custom-confirm-modal').classList.remove('hidden');
+            document.getElementById('custom-confirm-modal').classList.add('flex');
+            state.confirmCallback = callback;
+        }
+
+        // --- Navegación ---
+        function navigate(viewId) {
+            state.view = viewId;
+            document.querySelectorAll('.view-section').forEach(section => section.classList.remove('active'));
+            document.getElementById('view-' + viewId).classList.add('active');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('sidebar-active'));
+            document.getElementById('btn-' + viewId).classList.add('sidebar-active');
+
+            const titleMap = {
+                dashboard: 'Estadísticas de Jornada',
+                cierres: 'Nuevo Cierre Operativo',
+                valijas: 'Gestión de Valijas (Por Entregar)',
+                confirmaciones: 'Confirmación de Depósitos'
+            };
+            document.getElementById('view-title').innerText = titleMap[viewId] || ' FinancePro';
+            refreshScreenUIs();
+            if (window.innerWidth < 1024) toggleSidebar();
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const isOpen = sidebar.style.transform === 'translateX(0px)';
+
+            if (isOpen) {
+                sidebar.style.transform = 'translateX(-100%)';
+                overlay.style.display = 'none';
+            } else {
+                sidebar.style.transform = 'translateX(0px)';
+                overlay.style.display = 'block';
+            }
+        }
+
+        // --- Lógica del Formulario de Conteo ---
+        function renderCashFormGrid() {
+            const container = document.getElementById('cash-form-grid');
+            container.innerHTML = NOMENCLATURES_DEF.map((n, i) => `
+                <div class="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-150 shadow-inner">
+                    <span class="text-xs font-bold text-slate-600">${n.label}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[9px] text-slate-400 font-extrabold uppercase">Cant.</span>
+                        <input type="number" oninput="updateCierreFormCash(${i}, this.value)" class="w-16 p-2 bg-white border border-slate-200 rounded-xl text-center font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500" placeholder="0">
+                        <span class="w-16 text-right font-mono text-indigo-700 text-xs font-black" id="form-subtotal-${i}">$0.00</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateCierreFormCash(idx, val) {
+            state.currentCierre.counts[idx] = parseInt(val) || 0;
+            const subtotal = state.currentCierre.counts[idx] * NOMENCLATURES_DEF[idx].value;
+            document.getElementById(`form-subtotal-${idx}`).innerText = `$${subtotal.toFixed(2)}`;
+            calculateCurrentCierreSum();
+        }
+
+        function calculateCurrentCierreSum() {
+            const totalCash = state.currentCierre.counts.reduce((acc, count, i) => acc + (count * NOMENCLATURES_DEF[i].value), 0);
+            document.getElementById('form-total-cash').innerText = `$${totalCash.toFixed(2)}`;
+            return totalCash;
+        }
+
+        function setupPaymentFormListeners() {
+            document.querySelectorAll('.form-pay-input').forEach(input => {
+                input.addEventListener('input', e => {
+                    state.currentCierre.payments[e.target.dataset.pay] = parseFloat(e.target.value) || 0;
+                });
+            });
+            document.getElementById('form-vuelto').addEventListener('input', e => {
+                state.currentCierre.vuelto = parseFloat(e.target.value) || 0;
+            });
+        }
+
+        // --- Procesamiento de OCR Simulado ---
+        function runSimulatedOCR(input) {
+            if (!input.files[0]) return;
+            const idle = document.getElementById('form-ocr-idle');
+            const loading = document.getElementById('form-ocr-loading');
+            const isPosfechado = document.getElementById('form-check-posfechado').checked;
+
+            idle.classList.add('hidden');
+            loading.classList.remove('hidden');
+
+            setTimeout(() => {
+                const checkAmount = (Math.random() * 400 + 50).toFixed(2);
+                const bankName = ["PICHINCHA", "GUAYAQUIL", "PACIFICO", "PRODUBANCO"][Math.floor(Math.random() * 4)];
+                const refNum = Math.floor(100000 + Math.random() * 900000);
+
+                const mockCheck = {
+                    id: Date.now(),
+                    amount: checkAmount,
+                    bank: bankName,
+                    type: isPosfechado ? 'POSFECHADO' : 'ESTANDAR',
+                    ref: refNum
+                };
+
+                state.currentCierre.checks.push(mockCheck);
+                renderFormChecksList();
+                
+                loading.classList.add('hidden');
+                idle.classList.remove('hidden');
+                document.getElementById('form-check-posfechado').checked = false; // Reset toggle
+                showNotification(`OCR: Cheque de $${checkAmount} detectado con éxito.`);
+            }, 1200);
+        }
+
+        function renderFormChecksList() {
+            const list = document.getElementById('form-checks-list');
+            list.innerHTML = state.currentCierre.checks.map(c => `
+                <div class="flex justify-between items-center p-3 ${c.type === 'POSFECHADO' ? 'bg-purple-50 border-purple-100' : 'bg-green-50 border-green-100'} border rounded-2xl animate-in zoom-in">
+                    <div>
+                        <p class="text-[9px] font-black text-slate-400 uppercase leading-none mb-1">${c.bank}</p>
+                        <p class="text-[8px] font-bold ${c.type === 'POSFECHADO' ? 'text-purple-600' : 'text-green-600'} uppercase tracking-wider">${c.type === 'POSFECHADO' ? 'A Matriz (Posfechado)' : 'Al Banco (Estándar)'}</p>
+                    </div>
+                    <span class="font-mono font-black text-slate-800">$${c.amount}</span>
+                </div>
+            `).join('');
+        }
+
+        // --- Cierre Final Operativo ---
+        function handleFormSubmission() {
+            const cashSum = calculateCurrentCierreSum();
+            if (cashSum === 0 && state.currentCierre.checks.length === 0) {
+                showNotification("No hay valores contados para cerrar caja.", "error");
+                return;
+            }
+
+            showCustomConfirm("¿Desea cerrar la caja y generar el manifiesto de depósito?", () => {
+                const valijaID = `VAL-${Math.floor(100000 + Math.random() * 900000)}`;
+                const newClosure = {
+                    id: valijaID,
+                    date: new Date().toLocaleString(),
+                    user: state.user,
+                    cash: cashSum,
+                    counts: [...state.currentCierre.counts],
+                    payments: { ...state.currentCierre.payments },
+                    vuelto: state.currentCierre.vuelto,
+                    checks: [...state.currentCierre.checks],
+                    status: 'ENVIADA'
+                };
+
+                state.history.unshift(newClosure);
+                localStorage.setItem('finance_history_v6_data', JSON.stringify(state.history));
+                
+                // Disparar generación automática del Manifiesto PDF
+                generatePDFManifiesto(newClosure);
+
+                // Resetear Formulario
+                state.currentCierre = {
+                    counts: new Array(NOMENCLATURES_DEF.length).fill(0),
+                    payments: {},
+                    vuelto: 0,
+                    checks: []
+                };
+                renderCashFormGrid();
+                renderFormChecksList();
+                document.getElementById('form-total-cash').innerText = "$0.00";
+                document.querySelectorAll('.form-pay-input').forEach(input => input.value = '');
+                document.getElementById('form-vuelto').value = '';
+
+                showNotification(`Valija ${valijaID} generada como ENVIADA.`);
+                navigate('dashboard');
+            });
+        }
+
+        // --- Flujo de Vistas y Renderizado de Datos ---
+        function refreshScreenUIs() {
+            updateMetricsKPIs();
+            renderDashboardTable();
+            renderValijasFlow();
+            renderConfirmacionesFlow();
+        }
+
+        function updateMetricsKPIs() {
+            const cashTotal = state.history.reduce((acc, v) => acc + v.cash, 0);
+            const vueltoTotal = state.history.reduce((acc, v) => acc + (parseFloat(v.vuelto) || 0), 0);
+            const enCustodia = state.history.filter(v => v.status === 'CUSTODIA').length;
+            const sinConfirmar = state.history.filter(v => v.status === 'ENVIADA').length;
+            const posfechados = state.history.filter(v => v.checks.some(c => c.type === 'POSFECHADO') && v.status !== 'DEPOSITADA').length;
+
+            document.getElementById('kpi-cash').innerText = `$${cashTotal.toFixed(2)}`;
+            document.getElementById('kpi-vuelto').innerText = `$${vueltoTotal.toFixed(2)}`;
+            document.getElementById('kpi-custodia').innerText = enCustodia;
+            document.getElementById('kpi-unconfirmed').innerText = sinConfirmar;
+            document.getElementById('kpi-pos').innerText = posfechados;
+        }
+
+        function filterTable(filterType) {
+            state.tableFilter = filterType;
+            const indicator = document.getElementById('table-filter-indicator');
+            const map = {
+                ALL: 'Visualizando: Todo',
+                CASH: 'Visualizando: Efectivo Recibido',
+                CUSTODIA: 'Visualizando: En Custodia',
+                ENVIADA: 'Visualizando: Por Confirmar Banco',
+                POSFECHADO: 'Visualizando: Posfechados Matriz'
+            };
+            indicator.innerText = map[filterType] || 'Visualizando: Todo';
+            renderDashboardTable();
+        }
+
+        function clearTableFilters() {
+            state.tableFilter = 'ALL';
+            document.getElementById('table-filter-indicator').innerText = 'Visualizando: Todo';
+            renderDashboardTable();
+        }
+
+        function renderDashboardTable() {
+            const search = document.getElementById('table-search').value.toUpperCase();
+            const body = document.getElementById('dashboard-table-body');
+            
+            let data = state.history;
+
+            if (state.tableFilter === 'CUSTODIA') {
+                data = data.filter(v => v.status === 'CUSTODIA');
+            } else if (state.tableFilter === 'ENVIADA') {
+                data = data.filter(v => v.status === 'ENVIADA');
+            } else if (state.tableFilter === 'POSFECHADO') {
+                data = data.filter(v => v.checks.some(c => c.type === 'POSFECHADO'));
+            } else if (state.tableFilter === 'CASH') {
+                data = data.filter(v => v.cash > 0);
+            }
+
+            if (search) {
+                data = data.filter(v => v.id.includes(search));
+            }
+
+            if (data.length === 0) {
+                body.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 uppercase font-black opacity-30 tracking-widest text-[10px]">Sin transacciones registradas</td></tr>`;
+                return;
+            }
+
+            body.innerHTML = data.map(v => {
+                const tarjeta = v.payments.tarjeta || 0;
+                const otros = (v.payments.deUna || 0) + (v.payments.delivery || 0);
+                const checksTotal = v.checks.reduce((acc, c) => acc + parseFloat(c.amount), 0);
+
+                return `
+                    <tr class="hover:bg-slate-50/70 transition-all">
+                        <td class="p-4 pl-6 font-extrabold text-indigo-600 uppercase tracking-tighter">${v.id}</td>
+                        <td class="p-4">
+                            <span class="text-[8px] font-black uppercase px-2 py-1 rounded-lg ${getStatusPillStyle(v.status)}">
+                                ${v.status === 'ENVIADA' ? 'En Local' : (v.status === 'CUSTODIA' ? 'En Custodia' : 'Depositado')}
+                            </span>
+                        </td>
+                        <td class="p-4 font-mono">$${v.cash.toFixed(2)}</td>
+                        <td class="p-4 font-mono">$${tarjeta.toFixed(2)}</td>
+                        <td class="p-4 font-mono">$${otros.toFixed(2)}</td>
+                        <td class="p-4 font-mono">$${checksTotal.toFixed(2)}</td>
+                        <td class="p-4 pr-6 text-center">
+                            <button onclick="openDetailModal('${v.id}')" class="p-2 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function getStatusPillStyle(status) {
+            if (status === 'ENVIADA') return 'bg-orange-100 text-orange-600';
+            if (status === 'CUSTODIA') return 'bg-purple-100 text-purple-600';
+            if (status === 'DEPOSITADA') return 'bg-emerald-100 text-emerald-600';
+            return 'bg-slate-100 text-slate-600';
+        }
+
+        // --- Gestión de Valijas ---
+        function renderValijasFlow() {
+            const container = document.getElementById('valijas-grid');
+            const data = state.history.filter(v => v.status === 'ENVIADA');
+
+            if (data.length === 0) {
+                container.innerHTML = `<div class="col-span-full py-16 text-center text-slate-400 uppercase font-black opacity-20 tracking-widest text-[10px]">No hay valijas listas en local</div>`;
+                return;
+            }
+
+            container.innerHTML = data.map(v => {
+                const totalValores = v.cash + v.checks.reduce((acc, c) => acc + parseFloat(c.amount), 0);
+                return `
+                    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start mb-4">
+                                <span class="text-[10px] font-black text-indigo-600 uppercase tracking-wider">${v.id}</span>
+                                <span class="text-[8px] bg-amber-50 text-amber-500 font-extrabold px-2 py-1 rounded-lg">POR ENTREGAR</span>
+                            </div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Responsable</p>
+                            <p class="text-sm font-extrabold text-slate-800 mb-4">${v.user}</p>
+                        </div>
+                        <div class="flex justify-between items-end border-t pt-4">
+                            <div>
+                                <p class="text-[8px] font-bold text-slate-400 uppercase">Valores Custodia</p>
+                                <p class="text-xl font-extrabold text-slate-900 font-mono">$${totalValores.toFixed(2)}</p>
+                            </div>
+                            <button onclick="openCourierQRModal('${v.id}')" class="bg-indigo-600 text-white text-[10px] font-black px-4 py-2.5 rounded-xl uppercase tracking-wider shadow-lg shadow-indigo-600/10 hover:bg-indigo-700 active:scale-[0.98] transition-all">
+                                Entregar
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // --- Gestión de Confirmaciones ---
+        function renderConfirmacionesFlow() {
+            const container = document.getElementById('confirmaciones-grid');
+            const data = state.history.filter(v => v.status === 'CUSTODIA');
+
+            if (data.length === 0) {
+                container.innerHTML = `<div class="col-span-full py-16 text-center text-slate-400 uppercase font-black opacity-20 tracking-widest text-[10px]">No hay valijas viajando al banco</div>`;
+                return;
+            }
+
+            container.innerHTML = data.map(v => {
+                const totalValores = v.cash + v.checks.reduce((acc, c) => acc + parseFloat(c.amount), 0);
+                return `
+                    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start mb-4">
+                                <span class="text-[10px] font-black text-purple-600 uppercase tracking-wider">${v.id}</span>
+                                <span class="text-[8px] bg-purple-50 text-purple-600 font-extrabold px-2 py-1 rounded-lg">EN RUTA</span>
+                            </div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Fec. Entrega: ${v.lastUpdate || v.date}</p>
+                        </div>
+                        <div class="flex justify-between items-end border-t pt-4">
+                            <div>
+                                <p class="text-[8px] font-bold text-slate-400 uppercase">Valores a Depositar</p>
+                                <p class="text-xl font-extrabold text-slate-900 font-mono">$${totalValores.toFixed(2)}</p>
+                            </div>
+                            <button onclick="openBankConfirmationModal('${v.id}')" class="bg-emerald-600 text-white text-[10px] font-black px-4 py-2.5 rounded-xl uppercase tracking-wider shadow-lg shadow-emerald-600/10 hover:bg-emerald-700 active:scale-[0.98] transition-all">
+                                Banco
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // --- Flujo de Entregas mediante QR (Mensajero) ---
+        function openCourierQRModal(id) {
+            state.activeModalValija = state.history.find(v => v.id === id);
+            document.getElementById('qr-valija-id').innerText = `IDENTIFICACIÓN: ${id}`;
+            document.getElementById('qrcode-container').innerHTML = '';
+            
+            // Render del QR dinámico
+            new QRCode(document.getElementById("qrcode-container"), {
+                text: `CUSTODY-TRANSFER-CONFIRMATION-${id}`,
+                width: 140,
+                height: 140,
+                colorDark : "#0f172a",
+                colorLight : "#ffffff"
+            });
+
+            document.getElementById('modal-qr').style.display = 'flex';
+        }
+
+        function simulateCourierScan() {
+            showCustomConfirm("¿Desea simular la validación del QR para el transportador?", () => {
+                updateValijaStatus(state.activeModalValija.id, 'CUSTODIA');
+                document.getElementById('modal-qr').style.display = 'none';
+                showNotification(`Valija ${state.activeModalValija.id} transferida a custodia del transportador.`);
+                navigate('dashboard');
+            });
+        }
+
+        // --- Flujo de Cierre con el Banco ---
+        function openBankConfirmationModal(id) {
+            state.activeModalValija = state.history.find(v => v.id === id);
+            document.getElementById('upload-valija-id').innerText = `DEPÓSITO BANCARIO: ${id}`;
+            document.getElementById('upload-img-preview').classList.add('hidden');
+            document.getElementById('upload-idle').classList.remove('hidden');
+            
+            const confirmBtn = document.getElementById('upload-btn-confirm');
+            confirmBtn.classList.add('opacity-50', 'pointer-events-none');
+
+            document.getElementById('modal-upload').style.display = 'flex';
+        }
+
+        function handleBankReceiptUpload(input) {
+            if (input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    document.getElementById('upload-img-preview').src = e.target.result;
+                    document.getElementById('upload-img-preview').classList.remove('hidden');
+                    document.getElementById('upload-idle').classList.add('hidden');
+
+                    const confirmBtn = document.getElementById('upload-btn-confirm');
+                    confirmBtn.classList.remove('opacity-50', 'pointer-events-none');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function executeCierreBancoConfirm() {
+            showCustomConfirm("¿Confirmar que la valija fue depositada y subir comprobante?", () => {
+                updateValijaStatus(state.activeModalValija.id, 'DEPOSITADA');
+                document.getElementById('modal-upload').style.display = 'none';
+                showNotification(`Depósito de la valija ${state.activeModalValija.id} confirmado correctamente.`);
+                navigate('dashboard');
+            });
+        }
+
+        function updateValijaStatus(id, newStatus) {
+            const idx = state.history.findIndex(v => v.id === id);
+            if (idx !== -1) {
+                state.history[idx].status = newStatus;
+                state.history[idx].lastUpdate = new Date().toLocaleString();
+                localStorage.setItem('finance_history_v6_data', JSON.stringify(state.history));
+                refreshScreenUIs();
+            }
+        }
+
+        // --- Detalle Auditable y Reimpresión ---
+        function openDetailModal(id) {
+            const v = state.history.find(val => val.id === id);
+            state.activeModalValija = v;
+
+            document.getElementById('modal-valija-id').innerText = v.id;
+            document.getElementById('modal-date').innerText = v.date;
+
+            // Desglose de nomenclaturas
+            const nomList = document.getElementById('modal-nomenclaturas-list');
+            nomList.innerHTML = v.counts.map((c, i) => 
+                c > 0 ? `<div>${NOMENCLATURES_DEF[i].label} (x${c})</div><div class="text-right font-mono font-bold">$${(c * NOMENCLATURES_DEF[i].value).toFixed(2)}</div>` : ''
+            ).join('') || `<div class="col-span-2 text-center text-slate-400">Sin dinero en efectivo</div>`;
+
+            // Cheques
+            const chkList = document.getElementById('modal-cheques-list');
+            chkList.innerHTML = v.checks.map(c => `
+                <div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-100">
+                    <div>
+                        <p class="font-extrabold uppercase tracking-tighter text-[9px] text-slate-600">${c.bank}</p>
+                        <p class="text-[8px] text-slate-400">REF: ${c.ref}</p>
+                    </div>
+                    <div class="text-right flex items-center gap-2">
+                        <span class="text-[7px] font-black uppercase px-1.5 py-0.5 rounded ${c.type === 'POSFECHADO' ? 'bg-purple-100 text-purple-600' : 'bg-green-100 text-green-600'}">${c.type}</span>
+                        <span class="font-mono text-xs font-black text-slate-800">$${c.amount}</span>
+                    </div>
+                </div>
+            `).join('') || `<p class="text-center text-slate-400 text-[10px] py-2 uppercase font-black opacity-30">Sin cheques para declarar</p>`;
+
+            // Otros pagos y deductibles
+            const otrList = document.getElementById('modal-otros-list');
+            const lines = [];
+            if (v.payments.tarjeta) lines.push(`<div class="flex justify-between"><span>Tarjetas</span><span class="font-mono">$${v.payments.tarjeta.toFixed(2)}</span></div>`);
+            if (v.payments.deUna) lines.push(`<div class="flex justify-between"><span>De Una</span><span class="font-mono">$${v.payments.deUna.toFixed(2)}</span></div>`);
+            if (v.payments.delivery) lines.push(`<div class="flex justify-between"><span>Delivery</span><span class="font-mono">$${v.payments.delivery.toFixed(2)}</span></div>`);
+            if (v.vuelto) lines.push(`<div class="flex justify-between text-rose-500"><span>Fondo Vuelto (Deducción)</span><span class="font-mono">-$${v.vuelto.toFixed(2)}</span></div>`);
+
+            otrList.innerHTML = lines.join('') || `<p class="text-center text-slate-400 text-[10px] py-2 uppercase font-black opacity-30">Sólo Efectivo Declarado</p>`;
+
+            const modalAction = document.getElementById('modal-action-btn');
+            document.getElementById('modal-detail').style.display = 'flex';
+        }
+
+        function closeDetailModal() {
+            document.getElementById('modal-detail').style.display = 'none';
+        }
+
+        function reprintActivePDF() {
+            if (state.activeModalValija) {
+                generatePDFManifiesto(state.activeModalValija);
+                showNotification("Papeleta duplicada generada con éxito.");
+            }
+        }
+
+        // --- Generación Real de Documentos PDF (Papeletas) ---
+        function generatePDFManifiesto(v) {
+            const doc = new jsPDF();
+            const checksEst = v.checks.filter(c => c.type === 'ESTANDAR');
+            const checksPos = v.checks.filter(c => c.type === 'POSFECHADO');
+
+            const stdSum = checksEst.reduce((a, b) => a + parseFloat(b.amount), 0);
+            const posSum = checksPos.reduce((a, b) => a + parseFloat(b.amount), 0);
+
+            // Cabecera Principal del Documento
+            doc.setFontSize(22);
+            doc.setTextColor(15, 23, 42); // Slate-900
+            doc.text('MANIFIESTO Y RESUMEN DE CAJA', 105, 20, { align: 'center' });
+            
+            doc.setFontSize(9);
+            doc.setFont(undefined, 'bold');
+            doc.text(`VALIJA OPERATIVA: ${v.id}`, 20, 35);
+            doc.text(`FECHA APERTURA: ${v.date}`, 20, 41);
+            doc.text(`CAJERO RESPONSABLE: ${v.user.toUpperCase()}`, 20, 47);
+            doc.line(20, 50, 190, 50);
+
+            // Detalle 1: Depósito Directo de Banco
+            doc.setFontSize(13);
+            doc.setFont(undefined, 'bold');
+            doc.text('I. DECLARACIÓN DE DEPÓSITO (PAPELETA BANCARIA)', 20, 62);
+            
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Efectivo Físico Declarado:`, 30, 72);
+            doc.text(`$${v.cash.toFixed(2)}`, 180, 72, { align: 'right' });
+            doc.text(`Cheques Estándar al Día (${checksEst.length} unidades):`, 30, 79);
+            doc.text(`$${stdSum.toFixed(2)}`, 180, 79, { align: 'right' });
+
+            doc.line(140, 83, 180, 83);
+            doc.setFont(undefined, 'bold');
+            doc.text(`Monto de Depósito Bancario:`, 30, 91);
+            doc.text(`$${(v.cash + stdSum).toFixed(2)}`, 180, 91, { align: 'right' });
+
+            // Detalle 2: Cheques Posfechados (Envío a Matriz)
+            doc.setFontSize(13);
+            doc.text('II. VALORES PARA CUSTODIA (ENVÍO A MATRIZ CENTRAL)', 20, 110);
+            
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Cheques Posfechados Recibidos (${checksPos.length} unidades):`, 30, 120);
+            doc.text(`$${posSum.toFixed(2)}`, 180, 120, { align: 'right' });
+            
+            doc.line(140, 124, 180, 124);
+            doc.setFont(undefined, 'bold');
+            doc.text(`Monto Custodia Matriz:`, 30, 131);
+            doc.text(`$${posSum.toFixed(2)}`, 180, 131, { align: 'right' });
+
+            // Sección de Firmas de Auditoría
+            doc.setFontSize(9);
+            doc.line(20, 155, 190, 155);
+            doc.text('SOPORTE Y RESPONSABILIDAD DE CUSTODIA:', 20, 163);
+
+            doc.line(30, 195, 80, 195);
+            doc.text('Firma Cajero Entregante', 35, 201);
+            
+            doc.line(120, 195, 170, 195);
+            doc.text('Firma Mensajero Custodio', 123, 201);
+
+            doc.save(`Manifiesto_${v.id}.pdf`);
+        }
+
+        function logout() {
+            showCustomConfirm("¿Desea cerrar la sesión del sistema operativo?", () => {
+                location.reload();
+            });
+        }
+    </script>
+</body>
+</html>

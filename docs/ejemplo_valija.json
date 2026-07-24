@@ -1,0 +1,31 @@
+{
+  "valija_id": "VAL-882910",
+  "fecha": "2026-05-11T09:15:32",
+  "usuario": "Cajero_01",
+  "efectivo_total": 450.00,
+  "nomenclaturas": [
+    { "denominacion": 20.00, "cantidad": 15 },
+    { "denominacion": 10.00, "cantidad": 10 }
+  ],
+  "pagos_adicionales": {
+    "tarjeta": 200.00,
+    "de_una": 120.00,
+    "delivery": 85.00
+  },
+  "fondo_vuelto": 50.00,
+  "cheques": [
+    {
+      "banco": "PICHINCHA",
+      "monto": 125.00,
+      "tipo": "ESTANDAR",
+      "referencia": "882012"
+    },
+    {
+      "banco": "PRODUBANCO",
+      "monto": 300.00,
+      "tipo": "POSFECHADO",
+      "referencia": "3102"
+    }
+  ],
+  "estado": "ENVIADA"
+}
