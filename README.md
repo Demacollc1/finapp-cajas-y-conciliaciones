@@ -17,6 +17,14 @@ matriz, con segregación de cheques e integraciones hacia Tableau y el ERP.
 - **Cheques `ESTANDAR`** → van al **reporte del banco** (papeleta: efectivo + estándar).
 - **Cheques `POSFECHADO`** → se consolidan para **envío a la Matriz**.
 
+## Conciliación de cuentas
+
+Cruce de **JD Edwards** (libros) contra los **estados de cuenta bancarios**:
+cada banco se normaliza con un **perfil entrenable** y el cruce clasifica cada
+movimiento en **CONCILIADO** (por campo de vinculación), **POSIBLE** (coincide
+monto+fecha, requiere **aprobación humana**) o **NO CONCILIADO**.
+Ver [`docs/CONCILIACION.md`](docs/CONCILIACION.md).
+
 ## Estructura del repositorio
 
 ```
@@ -42,6 +50,7 @@ uvicorn app.main:app --reload
 
 - [`backend/README.md`](backend/README.md) — API, endpoints, configuración y pruebas.
 - [`docs/API_FRONTEND.md`](docs/API_FRONTEND.md) — cómo conectar el front-end a la API.
+- [`docs/CONCILIACION.md`](docs/CONCILIACION.md) — módulo de conciliación de cuentas.
 - [`docs/manual_control_caja.md`](docs/manual_control_caja.md) — manual técnico operativo.
 - [`docs/ejemplo_valija.json`](docs/ejemplo_valija.json) — contrato de datos canónico.
 

@@ -88,6 +88,10 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     <span class="text-xs font-bold uppercase tracking-wider">Confirmaciones</span>
                 </button>
+                <button onclick="navigate('conciliacion')" class="nav-btn w-full flex items-center gap-3 p-3.5 rounded-2xl hover:bg-slate-800/50 hover:text-white transition-all text-left" id="btn-conciliacion">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                    <span class="text-xs font-bold uppercase tracking-wider">Conciliación</span>
+                </button>
             </nav>
         </div>
         
@@ -305,6 +309,63 @@
             </div>
         </section>
 
+        <!-- SECCIÓN 5: CONCILIACIÓN DE CUENTAS -->
+        <section id="view-conciliacion" class="view-section animate-in fade-in duration-300">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <!-- Ejecutar conciliación -->
+                <div class="lg:col-span-2 bg-white p-6 lg:p-8 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="text-base font-extrabold mb-1 flex items-center gap-3 text-slate-900">
+                        <div class="bg-indigo-50 p-2 rounded-xl text-indigo-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg></div>
+                        Ejecutar Conciliación
+                    </h2>
+                    <p class="text-xs text-slate-400 mb-6 font-bold uppercase tracking-wide">Cruce JD Edwards vs. Bancos</p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">1. CSV de JD Edwards (Libros)</label>
+                            <input type="file" id="conc-libro-file" accept=".csv,text/csv" class="w-full text-xs file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 file:font-bold file:text-xs bg-slate-50 border border-slate-200 rounded-2xl p-2">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">2. CSV de Bancos (uno o varios)</label>
+                            <input type="file" id="conc-banco-files" accept=".csv,text/csv" multiple class="w-full text-xs file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:bg-emerald-50 file:text-emerald-700 file:font-bold file:text-xs bg-slate-50 border border-slate-200 rounded-2xl p-2">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">Perfil del Libro (JDE)</label>
+                            <select id="conc-libro-perfil" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">Tolerancia de fechas (días)</label>
+                            <input type="number" id="conc-tolerancia" value="3" min="0" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-3 leading-relaxed">Los perfiles de banco se autodetectan por sus columnas. Si un banco es nuevo, entrénalo primero en el panel derecho.</p>
+
+                    <button onclick="ejecutarConciliacion()" class="w-full mt-6 bg-indigo-600 text-white font-extrabold py-4 rounded-2xl shadow-lg hover:bg-indigo-700 active:scale-[0.98] transition-all text-sm uppercase tracking-wider">
+                        Cruzar Datos
+                    </button>
+                </div>
+
+                <!-- Perfiles (entrenamiento) -->
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-base font-extrabold text-slate-900">Perfiles</h2>
+                        <button onclick="abrirEntrenamiento()" class="text-[10px] font-black text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-xl uppercase tracking-wider transition-colors">+ Entrenar</button>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mb-4 uppercase font-bold tracking-wide">Mapeo por banco / JDE</p>
+                    <div id="conc-perfiles-list" class="space-y-2 max-h-[320px] overflow-y-auto custom-scrollbar"></div>
+                </div>
+            </div>
+
+            <!-- Resultados -->
+            <div id="conc-resultados" class="hidden space-y-6">
+                <div id="conc-kpis" class="grid grid-cols-2 lg:grid-cols-4 gap-4"></div>
+                <div id="conc-grupos" class="space-y-6"></div>
+            </div>
+            <div id="conc-placeholder" class="py-16 text-center text-slate-400 uppercase font-black opacity-20 tracking-widest text-[11px]">
+                Sube los archivos y ejecuta el cruce para ver los resultados
+            </div>
+        </section>
+
     </div>
 
     <!-- MODAL 1: DETALLE DE TRANSACCIÓN (AUDITORÍA) -->
@@ -410,6 +471,112 @@
         </div>
     </div>
 
+    <!-- MODAL 4: ENTRENAMIENTO DE PERFIL DE BANCO -->
+    <div id="modal-entrenamiento" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-[70] items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in duration-200 flex flex-col max-h-[92vh]">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div>
+                    <h2 class="text-base font-extrabold text-slate-900">Entrenar Perfil de Mapeo</h2>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Define cómo leer el CSV de un banco o de JDE</p>
+                </div>
+                <button onclick="cerrarEntrenamiento()" class="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                    <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto custom-scrollbar space-y-5">
+                <!-- Paso 1: subir muestra -->
+                <div>
+                    <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">1. Sube un CSV de muestra del banco</label>
+                    <input type="file" id="train-file" accept=".csv,text/csv" onchange="inspeccionarArchivo(this)" class="w-full text-xs file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 file:font-bold file:text-xs bg-slate-50 border border-slate-200 rounded-2xl p-2">
+                    <p id="train-detected" class="text-[10px] text-emerald-600 font-bold mt-2 hidden"></p>
+                </div>
+
+                <!-- Paso 2: mapeo -->
+                <div id="train-form" class="hidden space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">Nombre del perfil</label>
+                            <input id="train-nombre" type="text" placeholder="Ej: Banco Bolivariano" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">Tipo</label>
+                            <select id="train-tipo" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="BANCO">Banco</option>
+                                <option value="LIBRO">Libro (JD Edwards)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">Columna Fecha</label>
+                            <select id="train-col-fecha" class="train-col w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">Formato de fecha</label>
+                            <input id="train-formato-fecha" type="text" placeholder="%d/%m/%Y" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-mono outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">Columna Descripción</label>
+                            <select id="train-col-desc" class="train-col w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-extrabold text-indigo-500 uppercase mb-1.5 block">Campo de Vinculación (clave) ★</label>
+                            <select id="train-col-vinc" class="train-col w-full p-3 bg-indigo-50/40 border border-indigo-100 rounded-2xl text-xs font-semibold outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">Modo de importe</label>
+                        <select id="train-monto-modo" onchange="toggleMontoModo()" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="single">Una sola columna con signo</option>
+                            <option value="debcred">Columnas separadas Débito / Crédito</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div id="train-monto-single">
+                            <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">Columna Monto</label>
+                            <select id="train-col-monto" class="train-col w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                        </div>
+                        <div id="train-monto-debcred" class="hidden grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">Débito</label>
+                                <select id="train-col-debito" class="train-col w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold outline-none"></select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">Crédito</label>
+                                <select id="train-col-credito" class="train-col w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold outline-none"></select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">Separador decimal</label>
+                            <select id="train-dec" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold outline-none">
+                                <option value=".">Punto (1234.56)</option>
+                                <option value=",">Coma (1234,56)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">Separador de miles</label>
+                            <select id="train-miles" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold outline-none">
+                                <option value="">Ninguno</option>
+                                <option value=",">Coma</option>
+                                <option value=".">Punto</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="train-signo" class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 relative"></div>
+                        <span class="ml-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Invertir signo del importe</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-slate-100 bg-slate-50 flex gap-3">
+                <button onclick="cerrarEntrenamiento()" class="flex-1 py-3 px-4 bg-slate-100 text-slate-700 font-bold rounded-2xl text-xs hover:bg-slate-200 transition-colors">Cancelar</button>
+                <button id="train-save-btn" onclick="guardarPerfil()" class="flex-1 py-3 px-4 bg-indigo-600 text-white font-bold rounded-2xl text-xs hover:bg-indigo-700 transition-colors opacity-50 pointer-events-none">Guardar Perfil</button>
+            </div>
+        </div>
+    </div>
+
     <!-- SCRIPT DE NEGOCIO -->
     <script>
         // --- Configuración de la API ---
@@ -433,6 +600,18 @@
             });
             let body = null;
             try { body = await res.json(); } catch (_) { /* respuesta sin cuerpo */ }
+            if (!res.ok) {
+                const msg = (body && (body.detail || body.message)) || `Error ${res.status}`;
+                throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+            }
+            return body;
+        }
+
+        // Subida multipart (archivos): el navegador fija el Content-Type con boundary.
+        async function apiUpload(path, formData) {
+            const res = await fetch(`${API_BASE}${path}`, { method: 'POST', body: formData });
+            let body = null;
+            try { body = await res.json(); } catch (_) { /* sin cuerpo */ }
             if (!res.ok) {
                 const msg = (body && (body.detail || body.message)) || `Error ${res.status}`;
                 throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
@@ -469,6 +648,7 @@
             activeModalValija: null,
             activeQrToken: null,         // token QR firmado por el backend
             activeBankReceipt: null,     // data-URI de la papeleta sellada
+            conciliacion: { perfiles: [], columnas: [], resultado: null },
             confirmCallback: null
         };
 
@@ -583,10 +763,12 @@
                 dashboard: 'Estadísticas de Jornada',
                 cierres: 'Nuevo Cierre Operativo',
                 valijas: 'Gestión de Valijas (Por Entregar)',
-                confirmaciones: 'Confirmación de Depósitos'
+                confirmaciones: 'Confirmación de Depósitos',
+                conciliacion: 'Conciliación de Cuentas'
             };
             document.getElementById('view-title').innerText = titleMap[viewId] || ' FinancePro';
             refreshScreenUIs();
+            if (viewId === 'conciliacion') cargarPerfiles();
             if (window.innerWidth < 1024) toggleSidebar();
         }
 
@@ -1146,6 +1328,303 @@
             doc.text('Firma Mensajero Custodio', 123, 201);
 
             doc.save(`Manifiesto_${v.id}.pdf`);
+        }
+
+        // =========================================================== //
+        //  CONCILIACIÓN DE CUENTAS
+        // =========================================================== //
+        const fmtMoney = n => `$${(Number(n) || 0).toFixed(2)}`;
+
+        async function cargarPerfiles() {
+            try {
+                const perfiles = await apiFetch('/conciliacion/perfiles');
+                state.conciliacion.perfiles = perfiles;
+                renderPerfilesList();
+                // Poblar el select del perfil de libro (JDE).
+                const sel = document.getElementById('conc-libro-perfil');
+                const libros = perfiles.filter(p => p.tipo === 'LIBRO');
+                sel.innerHTML = (libros.length ? libros : perfiles)
+                    .map(p => `<option value="${p.id}">${p.nombre}</option>`).join('')
+                    || `<option value="">(sin perfiles)</option>`;
+            } catch (err) {
+                showNotification(`No se pudieron cargar los perfiles: ${err.message}`, 'error');
+            }
+        }
+
+        function renderPerfilesList() {
+            const cont = document.getElementById('conc-perfiles-list');
+            const perfiles = state.conciliacion.perfiles;
+            if (!perfiles.length) {
+                cont.innerHTML = `<p class="text-[10px] text-slate-400 uppercase font-black opacity-40 tracking-widest text-center py-6">Sin perfiles. Entrena uno.</p>`;
+                return;
+            }
+            cont.innerHTML = perfiles.map(p => `
+                <div class="flex justify-between items-center p-3 bg-slate-50 border border-slate-100 rounded-2xl">
+                    <div class="overflow-hidden">
+                        <p class="text-xs font-extrabold text-slate-700 truncate">${p.nombre}</p>
+                        <p class="text-[8px] font-black uppercase tracking-widest ${p.tipo === 'LIBRO' ? 'text-indigo-500' : 'text-emerald-500'}">${p.tipo} · clave: ${p.columna_vinculacion || p.columna_referencia || '—'}</p>
+                    </div>
+                    <button onclick="eliminarPerfil(${p.id})" class="p-1.5 text-rose-400 hover:bg-rose-50 rounded-lg transition-colors" title="Eliminar">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function eliminarPerfil(id) {
+            showCustomConfirm("¿Eliminar este perfil de mapeo?", async () => {
+                try {
+                    await apiFetch(`/conciliacion/perfiles/${id}`, { method: 'DELETE' });
+                    showNotification("Perfil eliminado.");
+                    cargarPerfiles();
+                } catch (err) {
+                    showNotification(`Error: ${err.message}`, 'error');
+                }
+            });
+        }
+
+        // --- Entrenamiento (inspección + mapeo) ---
+        function abrirEntrenamiento() {
+            document.getElementById('train-file').value = '';
+            document.getElementById('train-form').classList.add('hidden');
+            document.getElementById('train-detected').classList.add('hidden');
+            const btn = document.getElementById('train-save-btn');
+            btn.classList.add('opacity-50', 'pointer-events-none');
+            state.conciliacion.columnas = [];
+            document.getElementById('modal-entrenamiento').style.display = 'flex';
+        }
+
+        function cerrarEntrenamiento() {
+            document.getElementById('modal-entrenamiento').style.display = 'none';
+        }
+
+        async function inspeccionarArchivo(input) {
+            if (!input.files[0]) return;
+            const fd = new FormData();
+            fd.append('archivo', input.files[0]);
+            try {
+                const info = await apiUpload('/conciliacion/perfiles/inspeccionar', fd);
+                state.conciliacion.columnas = info.columnas;
+
+                const detected = document.getElementById('train-detected');
+                detected.innerText = `Detectado: delimitador "${info.delimitador}" · ${info.columnas.length} columnas · ${info.total_filas} filas`;
+                detected.classList.remove('hidden');
+
+                // Poblar todos los selects de columnas.
+                const optNone = `<option value="">— ninguna —</option>`;
+                const opts = info.columnas.map(c => `<option value="${c}">${c}</option>`).join('');
+                document.querySelectorAll('.train-col').forEach(sel => {
+                    const permiteVacio = sel.id !== 'train-col-fecha';
+                    sel.innerHTML = (permiteVacio ? optNone : '') + opts;
+                });
+                // Sugerencias automáticas por nombre de columna.
+                autoSugerir('train-col-fecha', ['fecha', 'date']);
+                autoSugerir('train-col-desc', ['concepto', 'descrip', 'detalle', 'description']);
+                autoSugerir('train-col-vinc', ['referencia', 'documento', 'doc', 'ref']);
+                autoSugerir('train-col-monto', ['monto', 'amount', 'valor', 'importe']);
+                autoSugerir('train-col-debito', ['debito', 'débito', 'debit', 'cargo']);
+                autoSugerir('train-col-credito', ['credito', 'crédito', 'credit', 'abono']);
+
+                document.getElementById('train-form').classList.remove('hidden');
+                const btn = document.getElementById('train-save-btn');
+                btn.classList.remove('opacity-50', 'pointer-events-none');
+            } catch (err) {
+                showNotification(`No se pudo leer el CSV: ${err.message}`, 'error');
+            }
+        }
+
+        function autoSugerir(selectId, palabras) {
+            const sel = document.getElementById(selectId);
+            if (!sel) return;
+            const match = state.conciliacion.columnas.find(c =>
+                palabras.some(p => c.toLowerCase().includes(p)));
+            if (match) sel.value = match;
+        }
+
+        function toggleMontoModo() {
+            const modo = document.getElementById('train-monto-modo').value;
+            document.getElementById('train-monto-single').classList.toggle('hidden', modo !== 'single');
+            document.getElementById('train-monto-debcred').classList.toggle('hidden', modo === 'single');
+        }
+
+        async function guardarPerfil() {
+            const modo = document.getElementById('train-monto-modo').value;
+            const val = id => document.getElementById(id).value.trim();
+            const payload = {
+                nombre: val('train-nombre'),
+                tipo: val('train-tipo'),
+                columna_fecha: val('train-col-fecha'),
+                formato_fecha: val('train-formato-fecha') || null,
+                columna_descripcion: val('train-col-desc') || null,
+                columna_referencia: val('train-col-vinc') || null,
+                columna_vinculacion: val('train-col-vinc') || null,
+                columna_monto: modo === 'single' ? (val('train-col-monto') || null) : null,
+                columna_debito: modo === 'debcred' ? (val('train-col-debito') || null) : null,
+                columna_credito: modo === 'debcred' ? (val('train-col-credito') || null) : null,
+                separador_decimal: val('train-dec') || '.',
+                separador_miles: val('train-miles') || null,
+                signo_invertido: document.getElementById('train-signo').checked,
+            };
+            if (!payload.nombre) { showNotification("Indica un nombre para el perfil.", 'error'); return; }
+            try {
+                await apiFetch('/conciliacion/perfiles', { method: 'POST', body: JSON.stringify(payload) });
+                showNotification(`Perfil "${payload.nombre}" entrenado.`);
+                cerrarEntrenamiento();
+                cargarPerfiles();
+            } catch (err) {
+                showNotification(`Error al guardar el perfil: ${err.message}`, 'error');
+            }
+        }
+
+        // --- Ejecución del cruce ---
+        async function ejecutarConciliacion() {
+            const libroFile = document.getElementById('conc-libro-file').files[0];
+            const bancoFiles = document.getElementById('conc-banco-files').files;
+            const perfilLibro = document.getElementById('conc-libro-perfil').value;
+
+            if (!libroFile) { showNotification("Sube el CSV de JD Edwards.", 'error'); return; }
+            if (!bancoFiles.length) { showNotification("Sube al menos un CSV de banco.", 'error'); return; }
+            if (!perfilLibro) { showNotification("Selecciona (o entrena) un perfil de libro.", 'error'); return; }
+
+            const fd = new FormData();
+            fd.append('libro_archivo', libroFile);
+            for (const f of bancoFiles) fd.append('banco_archivos', f);
+            fd.append('libro_perfil_id', perfilLibro);
+            fd.append('tolerancia_dias', document.getElementById('conc-tolerancia').value || '3');
+
+            showNotification("Procesando y cruzando datos...", 'info');
+            try {
+                const detalle = await apiUpload('/conciliacion/ejecutar', fd);
+                state.conciliacion.resultado = detalle;
+                renderConciliacionResultados(detalle);
+                showNotification("Conciliación completada.");
+            } catch (err) {
+                showNotification(`Error en la conciliación: ${err.message}`, 'error');
+            }
+        }
+
+        function renderConciliacionResultados(det) {
+            document.getElementById('conc-placeholder').classList.add('hidden');
+            document.getElementById('conc-resultados').classList.remove('hidden');
+            const r = det.resumen;
+
+            document.getElementById('conc-kpis').innerHTML = `
+                ${kpiTile('Conciliados', r.conciliados, r.monto_conciliado, 'emerald')}
+                ${kpiTile('Posibles (revisar)', r.posibles, r.monto_posible, 'amber')}
+                ${kpiTile('No conc. Libros', r.no_conciliados_libro, r.monto_no_conciliado_libro, 'rose')}
+                ${kpiTile('No conc. Bancos', r.no_conciliados_banco, r.monto_no_conciliado_banco, 'slate')}
+            `;
+
+            const grupos = document.getElementById('conc-grupos');
+            grupos.innerHTML = '';
+
+            // Posibles (con aprobación humana)
+            if (det.posibles.length) {
+                grupos.innerHTML += `
+                <div class="bg-white rounded-3xl shadow-sm border border-amber-100 overflow-hidden">
+                    <div class="p-5 border-b border-slate-100 bg-amber-50/50">
+                        <h3 class="text-sm font-bold text-amber-700">Posibles Conciliaciones · requieren aprobación (${det.posibles.length})</h3>
+                    </div>
+                    <div class="overflow-x-auto"><table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50 text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
+                            <tr><th class="p-3 pl-5">Libro (JDE)</th><th class="p-3">Banco</th><th class="p-3">Monto</th><th class="p-3">Motivo</th><th class="p-3 pr-5 text-center">Acción</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 font-semibold text-slate-600">
+                        ${det.posibles.map(p => `
+                            <tr>
+                                <td class="p-3 pl-5"><span class="font-mono text-slate-800">${p.libro.clave || p.libro.referencia || '—'}</span><br><span class="text-[10px] text-slate-400">${p.libro.fecha || ''} · ${p.libro.descripcion || ''}</span></td>
+                                <td class="p-3"><span class="text-[10px] text-slate-500 font-bold uppercase">${p.banco.fuente}</span><br><span class="text-[10px] text-slate-400">${p.banco.fecha || ''} · ${p.banco.descripcion || ''}</span></td>
+                                <td class="p-3 font-mono font-bold">${fmtMoney(Math.abs(p.libro.monto))}</td>
+                                <td class="p-3 text-[10px]">${p.motivo || ''}</td>
+                                <td class="p-3 pr-5"><div class="flex gap-1.5 justify-center">
+                                    <button onclick="aprobarPosible(${r.id}, ${p.libro.id})" class="px-3 py-1.5 bg-emerald-600 text-white text-[9px] font-black rounded-lg uppercase hover:bg-emerald-700 transition-colors">Aprobar</button>
+                                    <button onclick="rechazarPosible(${r.id}, ${p.libro.id})" class="px-3 py-1.5 bg-slate-100 text-slate-600 text-[9px] font-black rounded-lg uppercase hover:bg-slate-200 transition-colors">Rechazar</button>
+                                </div></td>
+                            </tr>`).join('')}
+                        </tbody>
+                    </table></div>
+                </div>`;
+            }
+
+            grupos.innerHTML += tablaMovs('No conciliados · Libros (JDE)', det.no_conciliados_libro, 'rose');
+            grupos.innerHTML += tablaMovs('No conciliados · Bancos', det.no_conciliados_banco, 'slate');
+            grupos.innerHTML += tablaPares('Conciliados automáticamente', det.conciliados);
+        }
+
+        function kpiTile(label, count, monto, color) {
+            return `
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">${label}</p>
+                    <p class="text-2xl font-extrabold text-${color}-600 font-mono">${count}</p>
+                    <p class="text-[10px] font-bold text-slate-400 font-mono mt-1">${fmtMoney(monto)}</p>
+                </div>`;
+        }
+
+        function tablaMovs(titulo, movs, color) {
+            if (!movs.length) return '';
+            return `
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                <div class="p-5 border-b border-slate-100"><h3 class="text-sm font-bold text-${color}-600">${titulo} (${movs.length})</h3></div>
+                <div class="overflow-x-auto"><table class="w-full text-left text-xs">
+                    <thead class="bg-slate-50 text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
+                        <tr><th class="p-3 pl-5">Fuente</th><th class="p-3">Fecha</th><th class="p-3">Clave</th><th class="p-3">Descripción</th><th class="p-3 pr-5 text-right">Monto</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 font-semibold text-slate-600">
+                    ${movs.map(m => `
+                        <tr>
+                            <td class="p-3 pl-5 text-[10px] font-bold uppercase text-slate-500">${m.fuente}</td>
+                            <td class="p-3 font-mono">${m.fecha || '—'}</td>
+                            <td class="p-3 font-mono text-slate-800">${m.clave || m.referencia || '—'}</td>
+                            <td class="p-3 text-[10px]">${m.descripcion || ''}</td>
+                            <td class="p-3 pr-5 font-mono font-bold text-right">${fmtMoney(m.monto)}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table></div>
+            </div>`;
+        }
+
+        function tablaPares(titulo, pares) {
+            if (!pares.length) return '';
+            return `
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                <div class="p-5 border-b border-slate-100 bg-emerald-50/40"><h3 class="text-sm font-bold text-emerald-700">${titulo} (${pares.length})</h3></div>
+                <div class="overflow-x-auto"><table class="w-full text-left text-xs">
+                    <thead class="bg-slate-50 text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
+                        <tr><th class="p-3 pl-5">Clave</th><th class="p-3">Libro</th><th class="p-3">Banco</th><th class="p-3 pr-5 text-right">Monto</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 font-semibold text-slate-600">
+                    ${pares.map(p => `
+                        <tr>
+                            <td class="p-3 pl-5 font-mono text-slate-800">${p.libro.clave || '—'}</td>
+                            <td class="p-3 text-[10px]">${p.libro.fecha || ''} · ${p.libro.descripcion || ''}</td>
+                            <td class="p-3 text-[10px]">${p.banco.fuente} · ${p.banco.fecha || ''}</td>
+                            <td class="p-3 pr-5 font-mono font-bold text-right">${fmtMoney(Math.abs(p.libro.monto))}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table></div>
+            </div>`;
+        }
+
+        async function aprobarPosible(concId, movId) {
+            try {
+                const det = await apiFetch(`/conciliacion/${concId}/movimientos/${movId}/aprobar`, { method: 'POST' });
+                state.conciliacion.resultado = det;
+                renderConciliacionResultados(det);
+                showNotification("Conciliación aprobada.");
+            } catch (err) {
+                showNotification(`Error: ${err.message}`, 'error');
+            }
+        }
+
+        async function rechazarPosible(concId, movId) {
+            try {
+                const det = await apiFetch(`/conciliacion/${concId}/movimientos/${movId}/rechazar`, { method: 'POST' });
+                state.conciliacion.resultado = det;
+                renderConciliacionResultados(det);
+                showNotification("Coincidencia rechazada.");
+            } catch (err) {
+                showNotification(`Error: ${err.message}`, 'error');
+            }
         }
 
         function logout() {

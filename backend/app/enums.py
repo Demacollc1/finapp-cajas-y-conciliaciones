@@ -39,3 +39,34 @@ TRANSICIONES_VALIDAS: dict[EstadoValija, set[EstadoValija]] = {
 def transicion_permitida(actual: EstadoValija, destino: EstadoValija) -> bool:
     """Indica si se puede pasar de ``actual`` a ``destino``."""
     return destino in TRANSICIONES_VALIDAS.get(actual, set())
+
+
+# --------------------------------------------------------------------------- #
+#  Conciliación de cuentas
+# --------------------------------------------------------------------------- #
+class TipoPerfil(str, Enum):
+    """Origen de un perfil de mapeo de CSV."""
+
+    LIBRO = "LIBRO"    # JD Edwards (contabilidad / libros)
+    BANCO = "BANCO"    # Estado de cuenta bancario
+
+
+class OrigenMovimiento(str, Enum):
+    """De qué archivo proviene un movimiento normalizado."""
+
+    LIBRO = "LIBRO"
+    BANCO = "BANCO"
+
+
+class EstadoMovimiento(str, Enum):
+    """Resultado del cruce para un movimiento.
+
+    CONCILIADO     -> Vínculo confirmado por el campo clave (automático).
+    POSIBLE        -> Coincide monto/fecha (o clave con monto distinto);
+                      requiere aprobación humana.
+    NO_CONCILIADO  -> Sin contraparte.
+    """
+
+    CONCILIADO = "CONCILIADO"
+    POSIBLE = "POSIBLE"
+    NO_CONCILIADO = "NO_CONCILIADO"

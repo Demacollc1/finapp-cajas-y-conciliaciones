@@ -8,6 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from . import __version__
+from .conciliacion.router import router as conciliacion_router
+from .conciliacion.seed import seed_perfiles
 from .config import settings
 from .database import SessionLocal, init_db
 from .routers import integraciones, reportes, valijas
@@ -21,6 +23,7 @@ async def lifespan(app: FastAPI):
     if settings.seed_on_startup:
         with SessionLocal() as db:
             seed(db)
+            seed_perfiles(db)
     yield
 
 
@@ -32,7 +35,9 @@ app = FastAPI(
         "**Ciclo de estados:** ENVIADA → CUSTODIA (QR mensajero) → DEPOSITADA "
         "(papeleta sellada).\n\n"
         "**Segregación de cheques:** ESTANDAR → banco · POSFECHADO → Matriz.\n\n"
-        "**Integraciones:** Tableau (ventas) · ERP (asiento contable con # de valija)."
+        "**Integraciones:** Tableau (ventas) · ERP (asiento contable con # de valija).\n\n"
+        "**Conciliación:** cruce de JD Edwards vs. bancos con perfiles entrenables "
+        "y aprobación humana de coincidencias posibles."
     ),
     lifespan=lifespan,
 )
@@ -52,6 +57,7 @@ app.add_middleware(
 app.include_router(valijas.router, prefix=settings.api_prefix)
 app.include_router(reportes.router, prefix=settings.api_prefix)
 app.include_router(integraciones.router, prefix=settings.api_prefix)
+app.include_router(conciliacion_router, prefix=settings.api_prefix)
 
 
 @app.get("/", tags=["Sistema"], summary="Información del servicio")

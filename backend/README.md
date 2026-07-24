@@ -19,6 +19,12 @@ hoy resuelve en memoria con `localStorage`.
 - **Integraciones** (con modo simulado listo para desarrollar):
   - **Tableau** → traer las ventas del sistema y **conciliarlas** contra lo declarado.
   - **ERP** → registrar el **asiento contable** usando el número de valija.
+- **Conciliación de cuentas** (JD Edwards ↔ bancos):
+  - **Perfiles entrenables** para normalizar el CSV de cada banco (estructuras
+    distintas) a un formato estándar.
+  - Cruce con tres estados: **CONCILIADO** (por campo de vinculación),
+    **POSIBLE** (monto+fecha, con **aprobación humana**) y **NO CONCILIADO**.
+  - Ver [`docs/CONCILIACION.md`](../docs/CONCILIACION.md).
 
 ## Stack
 
@@ -78,6 +84,12 @@ Ver `.env.example`. Las más relevantes:
 | `GET`  | `/api/integraciones/tableau/ventas`         | Ventas del sistema (Tableau)                  |
 | `GET`  | `/api/integraciones/tableau/conciliacion`   | Conciliación declarado vs. Tableau            |
 | `POST` | `/api/integraciones/erp/asiento/{id}`       | Registrar/re-registrar asiento en el ERP      |
+| `POST` | `/api/conciliacion/perfiles/inspeccionar`   | Detectar columnas de un CSV (entrenamiento)   |
+| `POST` `GET` | `/api/conciliacion/perfiles`          | Crear / listar perfiles de mapeo              |
+| `POST` | `/api/conciliacion/ejecutar`                | Cruzar CSV de JDE vs. CSV de bancos           |
+| `GET`  | `/api/conciliacion/{id}`                    | Detalle del cruce (3 estados)                 |
+| `POST` | `/api/conciliacion/{id}/movimientos/{mid}/aprobar`  | Aprobar una posible conciliación      |
+| `POST` | `/api/conciliacion/{id}/movimientos/{mid}/rechazar` | Rechazar una posible conciliación     |
 
 ## Contrato de datos
 

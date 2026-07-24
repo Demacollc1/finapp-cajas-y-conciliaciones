@@ -39,5 +39,6 @@ def init_db() -> None:
     """Crea las tablas declaradas si no existen."""
     # Import local para registrar los modelos en la metadata antes de crear.
     from . import models  # noqa: F401
+    from .conciliacion import models as conciliacion_models  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
