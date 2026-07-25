@@ -9,6 +9,28 @@ Usar el **número de registro de efectos** — campo **`DREG`** en `F03B13`
 2. **Campo de vinculación** de la conciliación (JDE ↔ banco).
 3. **Acumulador** del total depositado.
 
+## Jerarquía de agrupación (3 niveles)
+
+El envío al banco tiene **tres niveles** de agrupación:
+
+```
+BATCH  (transacción contable, p. ej. 671256)
+ ├─ DREG 671249  (registro = depósito bancario)  → 1 efecto  = 666.00
+ └─ DREG 671253  (registro = depósito bancario)  → 2 efectos = 300.00
+                                                    Total batch = 966.00
+```
+
+| Nivel | Objeto | Sirve para |
+|-------|--------|-----------|
+| **Batch** | Nº de batch (`671256`) | **Transacción contable** — agrupa varios `DREG` en un solo asiento (post `R09801`). |
+| **`DREG`** | Registro de efectos (`671249`, `671253`) | **Depósito bancario** — referencia del depósito y **campo de vinculación** de la conciliación. |
+| **Efecto** | Cheque individual (giro) | El cheque posfechado, con su nº de efecto y monto. |
+
+> Un **batch** puede agrupar **varios `DREG`** (varios depósitos) en **una sola
+> transacción contable**. La **conciliación bancaria** se hace a nivel de
+> **`DREG`** (cada depósito), mientras que la **contabilización** es a nivel de
+> **batch**.
+
 ## Por qué
 
 Un **registro agrupa varios cheques posfechados** en un solo envío/depósito, así

@@ -49,6 +49,11 @@ El registro enviado agrupa **3 efectos** por **US$ 966.00**:
 - **Cuenta asociada:** `1.110102.03` (cuenta bancaria / de giros remitidos).
 - Confirma la composición del **registro de efectos** = **nº registro +
   compañía** (`671249` + `00001`, `671253` + `00001`).
+- **El batch agrupa varios `DREG` en una sola transacción contable:** el batch
+  `671256` contiene los registros `671249` (666.00) y `671253` (300.00) = 966.00.
+  La **contabilización** es a nivel de **batch**; la **conciliación bancaria** a
+  nivel de **`DREG`** (cada depósito). Ver
+  [vinculacion-bancaria-dreg.md](vinculacion-bancaria-dreg.md).
 
 ## Los dos reportes que genera
 
