@@ -19,8 +19,11 @@ y asigna la **cuenta bancaria** por la que se cobrarán.
 |--------|-------------------|------------------|
 | **Número de registro de efectos** | `Registro efectos` | `67124900001` |
 
-> Probable composición: **registro `671249` + compañía `00001`** (el batch del
-> ingreso fue `671247`). *A confirmar.*
+> Composición **confirmada** (paso 3): **registro `671249` + compañía `00001`**.
+
+> **Nota:** este paso solo *asigna* el registro (el efecto sigue en estado `4`).
+> El envío efectivo al banco y el cambio de estado ocurren en el
+> [paso 3](03-envio-efectos-banco.md) al ejecutar `R03B672`.
 
 ## Qué cambia respecto al paso 1
 
@@ -69,12 +72,10 @@ cobro*. **A confirmar** con el post del batch de la remesa (¿`671249`?), si exi
 
 ## Preguntas abiertas
 
-1. ¿Qué **programa** ejecuta realmente la remesa? (el campo muestra `P03B602`;
-   la remesa suele ser `P03B672`/`R03B672`).
-2. ¿La remesa **genera asiento contable**? Si sí, ¿qué cuentas (efectos
+1. ~~¿Qué programa ejecuta la remesa?~~ **Confirmado (paso 3):** `R03B672`.
+2. ~~¿Composición del nº de registro?~~ **Confirmado:** `671249` + `00001`.
+3. ¿La remesa **genera asiento contable**? Si sí, ¿qué cuentas (efectos
    remitidos)? ¿Es remesa **con o sin** responsabilidad contingente?
-3. ¿Confirmamos la **composición** del nº de registro (`671249` + `00001`)?
-4. ¿Qué determina la **cuenta bancaria `00000059`**? (¿se elige el banco al
-   remesar?) ¿Se relaciona con el `Cuenta bcria LM` que usará la conciliación?
-5. ¿Cuántos efectos agrupa un registro normalmente? (aquí 1; el proceso admite
-   "un conjunto de cheques").
+   *(Ver paso 3: aparece la cuenta `1.110102.03`.)*
+4. ¿Qué determina la **cuenta bancaria `00000059`**? ¿Se relaciona con el banco
+   físico al que se remite (`Entd bcria` del paso 3)?
