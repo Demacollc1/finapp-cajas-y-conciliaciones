@@ -90,6 +90,9 @@ Ver `.env.example`. Las más relevantes:
 | `GET`  | `/api/conciliacion/{id}`                    | Detalle del cruce (3 estados)                 |
 | `POST` | `/api/conciliacion/{id}/movimientos/{mid}/aprobar`  | Aprobar una posible conciliación      |
 | `POST` | `/api/conciliacion/{id}/movimientos/{mid}/rechazar` | Rechazar una posible conciliación     |
+| `GET`  | `/api/posfechados/pendientes`               | Cheques POSFECHADO pendientes de envío al banco |
+| `POST` | `/api/posfechados/remesas`                  | Registrar envío físico + nº de transacción del banco |
+| `POST` | `/api/posfechados/remesas/{id}/transaccion` | Capturar el nº de transacción que devuelve el banco |
 
 ## Contrato de datos
 

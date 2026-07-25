@@ -53,6 +53,24 @@ BATCH  (transacción contable = referencia bancaria, p. ej. 671256)  → total 9
   conciliación con aprobación humana), y habría que evaluar otro identificador
   que sí viaje al extracto (p. ej. el nº de depósito de la máquina).
 
+## Plan B (implementado en la app) — capturar el nº de transacción del banco
+
+Independientemente de si el banco permite llevar **nuestra** referencia (el nº de
+batch), el banco **sí devuelve un número de transacción** al depositar los
+cheques. FinancePro **ya registra el envío físico de posfechados** y **captura
+ese número** (sección *Posfechados*):
+
+- Se seleccionan los cheques `POSFECHADO` pendientes y se registra la remesa al
+  banco (`POST /posfechados/remesas`).
+- Se guarda el **`numero_transaccion_banco`** que devuelve el banco (al momento o
+  después, vía `POST /posfechados/remesas/{id}/transaccion`).
+- Opcionalmente se anota la **`referencia_jde`** (nº de batch) para atar ambos
+  mundos.
+
+Ese **número de transacción del banco** viaja seguro al estado de cuenta, así que
+es un **campo de vinculación confiable** para la conciliación de posfechados —
+sirva o no la referencia del batch.
+
 ## Implicación para el conciliador de FinancePro
 
 El motor de conciliación actual cruza movimientos **1:1**. Para los

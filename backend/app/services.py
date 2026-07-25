@@ -15,7 +15,7 @@ from .config import settings
 from .enums import EstadoValija, TipoCheque, transicion_permitida
 from .integrations.erp import erp_client
 from .integrations.tableau import tableau_client
-from .models import Cheque, Valija
+from .models import Cheque, RemesaPosfechados, Valija
 
 
 class ReglaNegocioError(Exception):
@@ -347,6 +347,93 @@ def conciliar_con_tableau(db: Session, dia: date) -> schemas.ConciliacionOut:
         diferencia=diferencia,
         cuadrado=diferencia == Decimal("0.00"),
     )
+
+
+def listar_posfechados_pendientes(db: Session) -> list[schemas.ChequePosfechadoPendiente]:
+    """Cheques POSFECHADO que aún no se han enviado en una remesa al banco."""
+    stmt = (
+        select(Cheque)
+        .join(Valija, Cheque.valija_id == Valija.id)
+        .where(Cheque.tipo == TipoCheque.POSFECHADO, Cheque.remesa_id.is_(None))
+        .order_by(Valija.fecha)
+    )
+    cheques = db.execute(stmt).scalars().all()
+    return [
+        schemas.ChequePosfechadoPendiente(
+            id=c.id,
+            valija_id=c.valija_id,
+            usuario=c.valija.usuario,
+            fecha_valija=c.valija.fecha,
+            banco=c.banco,
+            monto=c.monto,
+            referencia=c.referencia,
+        )
+        for c in cheques
+    ]
+
+
+def crear_remesa_posfechados(
+    db: Session, datos: schemas.RemesaPosfechadosCreate
+) -> RemesaPosfechados:
+    """Registra el envío físico de cheques posfechados al banco."""
+    cheques: list[Cheque] = []
+    for cid in datos.cheque_ids:
+        cheque = db.get(Cheque, cid)
+        if cheque is None:
+            raise NoEncontradaError(f"Cheque {cid} no encontrado.")
+        if cheque.tipo != TipoCheque.POSFECHADO:
+            raise ReglaNegocioError(f"El cheque {cid} no es POSFECHADO.")
+        if cheque.remesa_id is not None:
+            raise ReglaNegocioError(f"El cheque {cid} ya fue enviado en otra remesa.")
+        cheques.append(cheque)
+
+    numero = (datos.numero_transaccion_banco or "").strip() or None
+    remesa = RemesaPosfechados(
+        banco=datos.banco,
+        fecha_envio=datos.fecha_envio or datetime.now(),
+        usuario=datos.usuario or "Cajero_01",
+        numero_transaccion_banco=numero,
+        referencia_jde=(datos.referencia_jde or "").strip() or None,
+        estado="CONFIRMADA" if numero else "REGISTRADA",
+    )
+    db.add(remesa)
+    db.flush()
+    for cheque in cheques:
+        cheque.remesa_id = remesa.id
+    db.commit()
+    db.refresh(remesa)
+    return remesa
+
+
+def registrar_transaccion_banco(
+    db: Session, remesa_id: int, numero: str
+) -> RemesaPosfechados:
+    """Captura el número de transacción que devuelve el banco."""
+    remesa = db.get(RemesaPosfechados, remesa_id)
+    if remesa is None:
+        raise NoEncontradaError(f"Remesa {remesa_id} no encontrada.")
+    remesa.numero_transaccion_banco = numero.strip()
+    remesa.estado = "CONFIRMADA"
+    db.commit()
+    db.refresh(remesa)
+    return remesa
+
+
+def listar_remesas_posfechados(db: Session) -> list[RemesaPosfechados]:
+    return list(
+        db.execute(
+            select(RemesaPosfechados).order_by(RemesaPosfechados.creado_en.desc())
+        )
+        .scalars()
+        .all()
+    )
+
+
+def obtener_remesa_posfechados(db: Session, remesa_id: int) -> RemesaPosfechados:
+    remesa = db.get(RemesaPosfechados, remesa_id)
+    if remesa is None:
+        raise NoEncontradaError(f"Remesa {remesa_id} no encontrada.")
+    return remesa
 
 
 def registrar_asiento_erp(db: Session, valija_id: str) -> schemas.AsientoErpOut:

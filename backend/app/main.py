@@ -12,7 +12,7 @@ from .conciliacion.router import router as conciliacion_router
 from .conciliacion.seed import seed_perfiles
 from .config import settings
 from .database import SessionLocal, init_db
-from .routers import integraciones, reportes, valijas
+from .routers import integraciones, posfechados, reportes, valijas
 from .seed import seed
 
 
@@ -57,6 +57,7 @@ app.add_middleware(
 app.include_router(valijas.router, prefix=settings.api_prefix)
 app.include_router(reportes.router, prefix=settings.api_prefix)
 app.include_router(integraciones.router, prefix=settings.api_prefix)
+app.include_router(posfechados.router, prefix=settings.api_prefix)
 app.include_router(conciliacion_router, prefix=settings.api_prefix)
 
 

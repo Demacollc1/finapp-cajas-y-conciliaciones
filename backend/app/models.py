@@ -124,4 +124,53 @@ class Cheque(Base):
     )
     referencia: Mapped[str] = mapped_column(String(60), nullable=False)
 
+    # Remesa física al banco (solo aplica a cheques POSFECHADO enviados).
+    remesa_id: Mapped[int | None] = mapped_column(
+        ForeignKey("remesas_posfechados.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+
     valija: Mapped["Valija"] = relationship(back_populates="cheques")
+    remesa: Mapped["RemesaPosfechados | None"] = relationship(back_populates="cheques")
+
+
+class RemesaPosfechados(Base):
+    """Registro del envío físico de cheques POSFECHADO al banco.
+
+    Agrupa los cheques posfechados que se depositan físicamente en el banco y
+    guarda el **número de transacción que el banco devuelve** — el identificador
+    que aparece en el estado de cuenta y sirve de llave para la conciliación.
+    """
+
+    __tablename__ = "remesas_posfechados"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    banco: Mapped[str] = mapped_column(String(80), nullable=False)
+    fecha_envio: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    usuario: Mapped[str] = mapped_column(String(80), nullable=False)
+
+    # Número de transacción/comprobante que devuelve el banco al depositar.
+    numero_transaccion_banco: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    # Referencia opcional del lado JDE (batch / registro de efectos).
+    referencia_jde: Mapped[str | None] = mapped_column(String(60), nullable=True)
+
+    # REGISTRADA (sin nº de transacción aún) / CONFIRMADA (con nº del banco).
+    estado: Mapped[str] = mapped_column(String(12), nullable=False, default="REGISTRADA")
+
+    creado_en: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+    actualizado_en: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    cheques: Mapped[list["Cheque"]] = relationship(
+        back_populates="remesa", order_by="Cheque.id"
+    )
+
+    @property
+    def total(self) -> Decimal:
+        return sum((c.monto for c in self.cheques), Decimal("0"))
+
+    @property
+    def cantidad_cheques(self) -> int:
+        return len(self.cheques)

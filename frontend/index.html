@@ -92,6 +92,10 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
                     <span class="text-xs font-bold uppercase tracking-wider">Conciliación</span>
                 </button>
+                <button onclick="navigate('posfechados')" class="nav-btn w-full flex items-center gap-3 p-3.5 rounded-2xl hover:bg-slate-800/50 hover:text-white transition-all text-left" id="btn-posfechados">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                    <span class="text-xs font-bold uppercase tracking-wider">Posfechados</span>
+                </button>
             </nav>
         </div>
         
@@ -363,6 +367,60 @@
             </div>
             <div id="conc-placeholder" class="py-16 text-center text-slate-400 uppercase font-black opacity-20 tracking-widest text-[11px]">
                 Sube los archivos y ejecuta el cruce para ver los resultados
+            </div>
+        </section>
+
+        <!-- SECCIÓN 6: ENVÍO DE CHEQUES POSFECHADOS AL BANCO -->
+        <section id="view-posfechados" class="view-section animate-in fade-in duration-300">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Registrar envío -->
+                <div class="bg-white p-6 lg:p-8 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="text-base font-extrabold mb-1 flex items-center gap-3 text-slate-900">
+                        <div class="bg-purple-50 p-2 rounded-xl text-purple-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg></div>
+                        Envío físico al banco
+                    </h2>
+                    <p class="text-xs text-slate-400 mb-6 font-bold uppercase tracking-wide">Selecciona los cheques posfechados a depositar</p>
+
+                    <div id="posf-pendientes" class="space-y-2 max-h-[280px] overflow-y-auto custom-scrollbar mb-4">
+                        <!-- checkboxes dinámicos -->
+                    </div>
+
+                    <div class="p-4 bg-slate-900 rounded-2xl flex justify-between items-center text-white mb-5">
+                        <span class="font-extrabold uppercase text-[10px] tracking-widest text-slate-400">Total seleccionado</span>
+                        <span id="posf-total" class="text-xl font-black font-mono">$0.00</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">Banco</label>
+                            <input id="posf-banco" type="text" placeholder="Ej: PRODUBANCO" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">Fecha de envío</label>
+                            <input id="posf-fecha" type="date" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-extrabold text-purple-600 uppercase mb-1.5 block">Nº de transacción del banco ★</label>
+                            <input id="posf-transaccion" type="text" placeholder="El número que devuelve el banco" class="w-full p-3 bg-purple-50/40 border border-purple-100 rounded-2xl text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">Referencia JDE (batch, opcional)</label>
+                            <input id="posf-refjde" type="text" placeholder="Ej: 671256" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500">
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-3 leading-relaxed">Si aún no tienes el nº de transacción, puedes registrar el envío y capturarlo después.</p>
+
+                    <button onclick="registrarEnvioPosfechados()" class="w-full mt-5 bg-purple-600 text-white font-extrabold py-4 rounded-2xl shadow-lg hover:bg-purple-700 active:scale-[0.98] transition-all text-sm uppercase tracking-wider">
+                        Registrar Envío al Banco
+                    </button>
+                </div>
+
+                <!-- Remesas enviadas -->
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="text-base font-extrabold text-slate-900 mb-1">Remesas enviadas</h2>
+                    <p class="text-[10px] text-slate-400 mb-4 uppercase font-bold tracking-wide">Con su nº de transacción bancaria</p>
+                    <div id="posf-remesas" class="space-y-3 max-h-[520px] overflow-y-auto custom-scrollbar"></div>
+                </div>
             </div>
         </section>
 
@@ -649,6 +707,7 @@
             activeQrToken: null,         // token QR firmado por el backend
             activeBankReceipt: null,     // data-URI de la papeleta sellada
             conciliacion: { perfiles: [], columnas: [], resultado: null },
+            posfechados: { pendientes: [], seleccion: {} },
             confirmCallback: null
         };
 
@@ -764,11 +823,13 @@
                 cierres: 'Nuevo Cierre Operativo',
                 valijas: 'Gestión de Valijas (Por Entregar)',
                 confirmaciones: 'Confirmación de Depósitos',
-                conciliacion: 'Conciliación de Cuentas'
+                conciliacion: 'Conciliación de Cuentas',
+                posfechados: 'Envío de Posfechados al Banco'
             };
             document.getElementById('view-title').innerText = titleMap[viewId] || ' FinancePro';
             refreshScreenUIs();
             if (viewId === 'conciliacion') cargarPerfiles();
+            if (viewId === 'posfechados') cargarPosfechados();
             if (window.innerWidth < 1024) toggleSidebar();
         }
 
@@ -1622,6 +1683,133 @@
                 state.conciliacion.resultado = det;
                 renderConciliacionResultados(det);
                 showNotification("Coincidencia rechazada.");
+            } catch (err) {
+                showNotification(`Error: ${err.message}`, 'error');
+            }
+        }
+
+        // =========================================================== //
+        //  ENVÍO DE CHEQUES POSFECHADOS AL BANCO
+        // =========================================================== //
+        async function cargarPosfechados() {
+            try {
+                const [pendientes, remesas] = await Promise.all([
+                    apiFetch('/posfechados/pendientes'),
+                    apiFetch('/posfechados/remesas'),
+                ]);
+                state.posfechados.pendientes = pendientes;
+                state.posfechados.seleccion = {};
+                renderPosfechadosPendientes();
+                renderRemesas(remesas);
+                actualizarTotalPosfechados();
+                const fecha = document.getElementById('posf-fecha');
+                if (fecha && !fecha.value) fecha.value = new Date().toISOString().slice(0, 10);
+            } catch (err) {
+                showNotification(`No se pudieron cargar los posfechados: ${err.message}`, 'error');
+            }
+        }
+
+        function renderPosfechadosPendientes() {
+            const cont = document.getElementById('posf-pendientes');
+            const pend = state.posfechados.pendientes;
+            if (!pend.length) {
+                cont.innerHTML = `<p class="text-[10px] text-slate-400 uppercase font-black opacity-40 tracking-widest text-center py-8">No hay cheques posfechados pendientes de envío</p>`;
+                return;
+            }
+            cont.innerHTML = pend.map(c => `
+                <label class="flex items-center gap-3 p-3 bg-purple-50/40 border border-purple-100 rounded-2xl cursor-pointer hover:bg-purple-50 transition-colors">
+                    <input type="checkbox" onchange="togglePosfechado(${c.id}, this.checked)" class="w-4 h-4 accent-purple-600">
+                    <div class="flex-1 overflow-hidden">
+                        <p class="text-xs font-extrabold text-slate-700">${c.banco} <span class="text-[9px] font-bold text-slate-400">· ${c.valija_id}</span></p>
+                        <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Ref: ${c.referencia} · ${c.usuario}</p>
+                    </div>
+                    <span class="font-mono font-black text-slate-800 text-sm">$${Number(c.monto).toFixed(2)}</span>
+                </label>
+            `).join('');
+        }
+
+        function togglePosfechado(id, checked) {
+            if (checked) state.posfechados.seleccion[id] = true;
+            else delete state.posfechados.seleccion[id];
+            actualizarTotalPosfechados();
+        }
+
+        function actualizarTotalPosfechados() {
+            const sel = state.posfechados.seleccion;
+            const total = state.posfechados.pendientes
+                .filter(c => sel[c.id])
+                .reduce((acc, c) => acc + Number(c.monto), 0);
+            document.getElementById('posf-total').innerText = `$${total.toFixed(2)}`;
+        }
+
+        function renderRemesas(remesas) {
+            const cont = document.getElementById('posf-remesas');
+            if (!remesas.length) {
+                cont.innerHTML = `<p class="text-[10px] text-slate-400 uppercase font-black opacity-40 tracking-widest text-center py-8">Aún no hay remesas registradas</p>`;
+                return;
+            }
+            cont.innerHTML = remesas.map(r => {
+                const fecha = r.fecha_envio ? new Date(r.fecha_envio).toLocaleDateString() : '';
+                const confirmada = r.estado === 'CONFIRMADA';
+                return `
+                <div class="p-4 border ${confirmada ? 'border-emerald-100 bg-emerald-50/30' : 'border-amber-100 bg-amber-50/30'} rounded-2xl">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <p class="text-xs font-extrabold text-slate-800">${r.banco}</p>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${fecha} · ${r.cantidad_cheques} cheque(s)</p>
+                        </div>
+                        <span class="font-mono font-black text-slate-900">$${Number(r.total).toFixed(2)}</span>
+                    </div>
+                    ${confirmada
+                        ? `<div class="flex items-center gap-2 text-[10px] font-bold text-emerald-700"><span class="uppercase tracking-widest text-[8px] text-emerald-500">Nº transacción:</span> <span class="font-mono">${r.numero_transaccion_banco}</span></div>`
+                        : `<div class="flex items-center gap-2 mt-1">
+                             <input id="trx-${r.id}" type="text" placeholder="Nº de transacción del banco" class="flex-1 p-2 bg-white border border-amber-200 rounded-xl text-[11px] font-semibold outline-none focus:ring-2 focus:ring-purple-500">
+                             <button onclick="capturarTransaccion(${r.id})" class="px-3 py-2 bg-purple-600 text-white text-[9px] font-black rounded-xl uppercase hover:bg-purple-700 transition-colors">Guardar</button>
+                           </div>`}
+                    ${r.referencia_jde ? `<p class="text-[8px] text-slate-400 mt-1 font-mono uppercase tracking-wider">JDE batch: ${r.referencia_jde}</p>` : ''}
+                </div>`;
+            }).join('');
+        }
+
+        async function registrarEnvioPosfechados() {
+            const ids = Object.keys(state.posfechados.seleccion).map(Number);
+            const banco = document.getElementById('posf-banco').value.trim();
+            const fecha = document.getElementById('posf-fecha').value;
+            const trx = document.getElementById('posf-transaccion').value.trim();
+            const refjde = document.getElementById('posf-refjde').value.trim();
+
+            if (!ids.length) { showNotification("Selecciona al menos un cheque posfechado.", 'error'); return; }
+            if (!banco) { showNotification("Indica el banco.", 'error'); return; }
+
+            const payload = {
+                banco,
+                cheque_ids: ids,
+                fecha_envio: fecha ? new Date(fecha).toISOString() : null,
+                numero_transaccion_banco: trx || null,
+                referencia_jde: refjde || null,
+            };
+            try {
+                const remesa = await apiFetch('/posfechados/remesas', { method: 'POST', body: JSON.stringify(payload) });
+                document.getElementById('posf-banco').value = '';
+                document.getElementById('posf-transaccion').value = '';
+                document.getElementById('posf-refjde').value = '';
+                await cargarPosfechados();
+                await loadHistory();  // refresca KPIs del dashboard
+                showNotification(`Envío registrado (${remesa.estado}) por $${Number(remesa.total).toFixed(2)}.`);
+            } catch (err) {
+                showNotification(`Error al registrar el envío: ${err.message}`, 'error');
+            }
+        }
+
+        async function capturarTransaccion(remesaId) {
+            const val = (document.getElementById(`trx-${remesaId}`).value || '').trim();
+            if (!val) { showNotification("Ingresa el nº de transacción.", 'error'); return; }
+            try {
+                await apiFetch(`/posfechados/remesas/${remesaId}/transaccion`, {
+                    method: 'POST', body: JSON.stringify({ numero_transaccion_banco: val }),
+                });
+                await cargarPosfechados();
+                showNotification("Nº de transacción guardado.");
             } catch (err) {
                 showNotification(`Error: ${err.message}`, 'error');
             }

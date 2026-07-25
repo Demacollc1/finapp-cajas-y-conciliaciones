@@ -257,3 +257,62 @@ class AsientoErpOut(BaseModel):
     asiento_id: str
     estado: str
     detalle: dict
+
+
+# --------------------------------------------------------------------------- #
+#  Remesa de cheques posfechados al banco (envío físico)
+# --------------------------------------------------------------------------- #
+class ChequePosfechadoPendiente(BaseModel):
+    """Cheque POSFECHADO aún no enviado al banco (candidato para remesa)."""
+
+    id: int
+    valija_id: str
+    usuario: str
+    fecha_valija: datetime
+    banco: str
+    monto: Money
+    referencia: str
+
+
+class RemesaPosfechadosCreate(BaseModel):
+    banco: str = Field(min_length=1, max_length=80)
+    fecha_envio: datetime | None = None
+    cheque_ids: list[int] = Field(min_length=1)
+    # El número que devuelve el banco; puede capturarse ahora o después.
+    numero_transaccion_banco: str | None = Field(default=None, max_length=80)
+    referencia_jde: str | None = Field(default=None, max_length=60)
+    usuario: str | None = None
+
+
+class TransaccionBancoIn(BaseModel):
+    numero_transaccion_banco: str = Field(min_length=1, max_length=80)
+
+
+class RemesaPosfechadosOut(BaseModel):
+    id: int
+    banco: str
+    fecha_envio: datetime
+    usuario: str
+    numero_transaccion_banco: str | None
+    referencia_jde: str | None
+    estado: str
+    total: Money
+    cantidad_cheques: int
+    cheques: list[ChequeOut]
+    creado_en: datetime | None = None
+
+    @classmethod
+    def from_model(cls, r) -> "RemesaPosfechadosOut":
+        return cls(
+            id=r.id,
+            banco=r.banco,
+            fecha_envio=r.fecha_envio,
+            usuario=r.usuario,
+            numero_transaccion_banco=r.numero_transaccion_banco,
+            referencia_jde=r.referencia_jde,
+            estado=r.estado,
+            total=r.total,
+            cantidad_cheques=r.cantidad_cheques,
+            cheques=[ChequeOut.model_validate(c) for c in r.cheques],
+            creado_en=r.creado_en,
+        )
