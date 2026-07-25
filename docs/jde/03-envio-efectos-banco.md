@@ -13,6 +13,12 @@ los efectos previamente registrados. Al correrlo:
   banco)**.
 - **Cambia el tipo de documento** del efecto de **`R1`** (aceptado) a **`R2`**
   (remitido).
+- El efecto **desaparece de la pantalla de confirmación de cheques**: al pasar a
+  estado `3` sale del filtro de pendientes por confirmar (ya fue enviado).
+
+> **Identificador de la conciliación:** se recomienda usar el **número de
+> registro de efectos** (campo **`DREG`**) como referencia del depósito
+> bancario. Ver [vinculacion-bancaria-dreg.md](vinculacion-bancaria-dreg.md).
 
 ## Estados del efecto
 

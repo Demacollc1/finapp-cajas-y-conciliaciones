@@ -17,6 +17,11 @@ para automatizarlo.
 
 > Documento vivo: se irá ampliando con cada paso que analicemos.
 
+**Decisión de diseño transversal:**
+[Vinculación bancaria por registro de efectos (`DREG`)](vinculacion-bancaria-dreg.md)
+— usar el `DREG` como referencia del depósito, campo de vinculación y acumulador
+de la conciliación.
+
 ## Ciclo del efecto (cheque posfechado)
 
 ```
