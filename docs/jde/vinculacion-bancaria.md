@@ -40,11 +40,18 @@ BATCH  (transacción contable = referencia bancaria, p. ej. 671256)  → total 9
 
 ## Acción pendiente — consultar al banco
 
-- **Consultar si el banco permite** asignar un **número de referencia interno** al
-  depósito.
-- Si es posible, ese número **debe ser el nº de `Batch`**.
-- Si el banco **no** lo permite, el cruce cae al modo por **monto agregado +
-  fecha** (posible conciliación con aprobación humana).
+**Pregunta concreta a confirmar con el banco:**
+
+> Al depositar los cheques en la **máquina de cheques (depósito automático)**,
+> ¿se permite **ingresar un número de referencia** que aparezca **dentro del
+> estado de cuenta bancario**, para poner ahí el **número de batch de JD
+> Edwards**?
+
+- Si **sí** → ese número de referencia **debe ser el nº de `Batch`**, y el cruce
+  de la conciliación será **directo y exacto** por batch.
+- Si **no** → el cruce cae al modo por **monto agregado + fecha** (posible
+  conciliación con aprobación humana), y habría que evaluar otro identificador
+  que sí viaje al extracto (p. ej. el nº de depósito de la máquina).
 
 ## Implicación para el conciliador de FinancePro
 
