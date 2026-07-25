@@ -18,23 +18,36 @@ para automatizarlo.
 > Documento vivo: se irá ampliando con cada paso que analicemos.
 
 **Decisión de diseño transversal:**
-[Vinculación bancaria por registro de efectos (`DREG`)](vinculacion-bancaria-dreg.md)
-— usar el `DREG` como referencia del depósito, campo de vinculación y acumulador
-de la conciliación.
+[Referencia y vinculación bancaria](vinculacion-bancaria.md)
+— usar el **nº de `Batch`** como referencia del depósito, campo de vinculación y
+acumulador de la conciliación (`Batch` ⊃ `DREG` ⊃ efecto).
 
 ## Ciclo del efecto (cheque posfechado)
 
 ```
-Paso 1            Paso 2            Paso 3                    (siguiente)
-Ingreso           Registro          Envío al banco           Cobro
-doc R1            registro efectos  R03B672 · doc R1→R2       (banco paga)
-estado 4          estado 4          estado 4 → 3             estado 3 → ?
-Debe 1.110209.02                    (cuenta 1.110102.03)     Debe Bancos
-Haber 1.110205.01                                            Haber efectos
+Paso 1  Ingreso        doc R1   estado 4    Debe 1.110209.02 / Haber 1.110205.01
+Paso 2  Registro       (DREG)   estado 4
+Paso 3  Envío al banco R1→R2    estado 4→3  Debe 1.110209.03 / Haber 1.110209.02
+Paso 4  Cobro (esper.)          estado 3→?  Debe Bancos      / Haber 1.110209.03
 ```
 
 **Estados:** `4` = ingresado · `3` = enviado al banco.
-**Tipos de documento:** `R1` = efecto aceptado · `R2` = efecto remitido.
+**Tipos de documento:** `R1` = efecto aceptado · `R2` = efecto remitido/consigna.
+
+**Mapa de cuentas:**
+
+| Cuenta | Significado |
+|--------|-------------|
+| `1.110205.01` | Cuentas por cobrar clientes |
+| `1.110209.02` | Cheque posfechado — **ingreso / en cartera** |
+| `1.110209.03` | Cheque posfechado — **consigna / en el banco** |
+| Bancos | *(cobro final, esperado)* |
+
+## Agrupación y referencia bancaria
+
+`Batch` ⊃ `DREG` ⊃ `Efecto`. **Referencia del depósito en el banco = número de
+`Batch`** (el agrupador de la transacción contable). Ver
+[vinculacion-bancaria.md](vinculacion-bancaria.md).
 
 ## Convenciones
 

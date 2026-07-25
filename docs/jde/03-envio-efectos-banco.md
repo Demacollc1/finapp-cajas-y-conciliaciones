@@ -17,8 +17,8 @@ los efectos previamente registrados. Al correrlo:
   estado `3` sale del filtro de pendientes por confirmar (ya fue enviado).
 
 > **Identificador de la conciliación:** se recomienda usar el **número de
-> registro de efectos** (campo **`DREG`**) como referencia del depósito
-> bancario. Ver [vinculacion-bancaria-dreg.md](vinculacion-bancaria-dreg.md).
+> `Batch`** (agrupador de la transacción contable) como referencia del depósito
+> bancario. Ver [vinculacion-bancaria.md](vinculacion-bancaria.md).
 
 ## Estados del efecto
 
@@ -51,9 +51,9 @@ El registro enviado agrupa **3 efectos** por **US$ 966.00**:
   compañía** (`671249` + `00001`, `671253` + `00001`).
 - **El batch agrupa varios `DREG` en una sola transacción contable:** el batch
   `671256` contiene los registros `671249` (666.00) y `671253` (300.00) = 966.00.
-  La **contabilización** es a nivel de **batch**; la **conciliación bancaria** a
-  nivel de **`DREG`** (cada depósito). Ver
-  [vinculacion-bancaria-dreg.md](vinculacion-bancaria-dreg.md).
+  La **contabilización** es a nivel de **batch**, y el **nº de batch** es también
+  la **referencia del depósito bancario** para la conciliación. Ver
+  [vinculacion-bancaria.md](vinculacion-bancaria.md).
 
 ## Los dos reportes que genera
 
@@ -73,14 +73,29 @@ cliente**, pagador, importe, **nº de giro** y **referencia del recibo**:
 | `67124900001` | *(banco Comisariato)* | Comisariato (666.00) | 666.00 |
 | | | **Total remesa** | **966.00** |
 
-## Contabilización
+## Contabilización (reporte `R09801`, batch DB `671256`)
 
-Estos dos reportes son el **detalle** y el **documento físico**; el efecto visible
-es el cambio de estado `4 → 3` y de tipo `R1 → R2`. La aparición de la cuenta
-`1.110102.03` sugiere una reclasificación contable de la remesa (de *efectos en
-cartera* `1.110209.02` hacia una cuenta bancaria/de giros remitidos), pero **no
-se adjuntó el post `R09801`** de este batch. **A confirmar** si `R03B672` genera
-asiento (según versión/parametrización) o si es solo operativo.
+**Confirmado: la remesa sí genera asiento.** El post reclasifica cada efecto de
+*posfechado ingreso* a *posfechado consigna* (una pareja de líneas por efecto):
+
+| Doc | Cuenta | Descripción de la cuenta | Débito | Crédito |
+|-----|--------|--------------------------|-------:|--------:|
+| `R2` 54356 | `1.110209.03` | CXC cheque posfechado **CONSIGNA** | 666.00 | |
+| `R1` 54356 | `1.110209.02` | CXC cheque posfechado **INGRESO** | | 666.00 |
+| `R2` 54357 | `1.110209.03` | …CONSIGNA | 200.00 | |
+| `R1` 54357 | `1.110209.02` | …INGRESO | | 200.00 |
+| `R2` 54358 | `1.110209.03` | …CONSIGNA | 100.00 | |
+| `R1` 54358 | `1.110209.02` | …INGRESO | | 100.00 |
+| | | **Totales (tipo LM `AA`)** | **966.00** | **966.00** |
+
+**Interpretación:** mueve el saldo **dentro** de "cheques posfechados por cobrar",
+de la sub-cuenta **ingreso / en cartera (`1.110209.02`)** a **consigna /
+remitido al banco (`1.110209.03`)**. Sigue **sin ser efectivo**: el cheque está
+en el banco para cobro pero aún no se acredita.
+
+> **Corrección:** la cuenta `1.110102.03` que aparece en el detalle operativo
+> `R03B672` **no** es la del asiento; el post usa `1.110209.03`. Queda por aclarar
+> qué representa `1.110102.03` (posible cuenta bancaria/operativa de la remesa).
 
 ## Relación con FinancePro
 
@@ -91,10 +106,11 @@ conciliar cuando el banco reporte el cobro (paso siguiente).
 
 ## Preguntas abiertas
 
-1. ¿`R03B672` **genera asiento contable** (reclasificación a `1.110102.03`), o
-   la contabilización ocurre en un post posterior?
-2. ¿Qué representa exactamente la cuenta `1.110102.03`? (¿banco / giros
-   remitidos / cuenta puente?)
+1. ~~¿`R03B672` genera asiento?~~ **Confirmado:** sí — reclasifica
+   `1.110209.02` (ingreso) → `1.110209.03` (consigna). Ver contabilización arriba.
+2. ¿Qué representa `1.110102.03` (aparece en el detalle `R03B672` pero **no** en
+   el asiento)? ¿Cuenta bancaria/operativa de la consigna?
 3. ¿La entidad bancaria (`17`, etc.) determina a qué banco físico se remite?
-4. El **siguiente paso** sería el **cobro del efecto** (el banco paga en la fecha
-   de vencimiento): ¿cambia el estado `3 → X` y genera el asiento a Bancos?
+4. El **siguiente paso** es el **cobro del efecto** (el banco paga en la fecha de
+   vencimiento): ¿cambia el estado `3 → X` y genera el asiento a Bancos
+   (Debe Bancos / Haber `1.110209.03`)?
