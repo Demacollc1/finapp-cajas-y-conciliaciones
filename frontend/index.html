@@ -404,8 +404,8 @@
                             <input id="posf-transaccion" type="text" placeholder="El número que devuelve el banco" class="w-full p-3 bg-purple-50/40 border border-purple-100 rounded-2xl text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500">
                         </div>
                         <div>
-                            <label class="text-[10px] font-extrabold text-slate-400 uppercase mb-1.5 block">Referencia JDE (batch, opcional)</label>
-                            <input id="posf-refjde" type="text" placeholder="Ej: 671256" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500">
+                            <label class="text-[10px] font-extrabold text-purple-600 uppercase mb-1.5 block">Nº de batch JDE (referencia de depósito)</label>
+                            <input id="posf-refjde" type="text" placeholder="Ej: 2940597" class="w-full p-3 bg-purple-50/40 border border-purple-100 rounded-2xl text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500">
                         </div>
                     </div>
                     <p class="text-[10px] text-slate-400 mt-3 leading-relaxed">Si aún no tienes el nº de transacción, puedes registrar el envío y capturarlo después.</p>
@@ -1766,7 +1766,7 @@
                              <input id="trx-${r.id}" type="text" placeholder="Nº de transacción del banco" class="flex-1 p-2 bg-white border border-amber-200 rounded-xl text-[11px] font-semibold outline-none focus:ring-2 focus:ring-purple-500">
                              <button onclick="capturarTransaccion(${r.id})" class="px-3 py-2 bg-purple-600 text-white text-[9px] font-black rounded-xl uppercase hover:bg-purple-700 transition-colors">Guardar</button>
                            </div>`}
-                    ${r.referencia_jde ? `<p class="text-[8px] text-slate-400 mt-1 font-mono uppercase tracking-wider">JDE batch: ${r.referencia_jde}</p>` : ''}
+                    ${r.referencia_jde ? `<p class="text-[8px] text-purple-500 mt-1 font-mono uppercase tracking-wider">Ref. depósito (batch JDE): ${r.referencia_jde}</p>` : ''}
                 </div>`;
             }).join('');
         }

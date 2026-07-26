@@ -27,6 +27,24 @@ envío al banco (p. ej. `671256`) — como:
 > agrupa por el batch de cobro o por el documento `RC`; falta confirmar si un
 > batch de envío se cobra siempre en un único batch de cobro.
 
+## Dónde vive el batch en JDE (aliases confirmados)
+
+| Programa / pantalla | Campo | Alias | Tabla |
+|---------------------|-------|:-----:|-------|
+| **`P09131` / `W09131A`** (conciliación bancaria manual) | `Referencia 1` | **`R1`** | `F0911` |
+| **`P03B602` / `W03B602A`** (consulta de efectos) | `Número batch` | **`ICU`** | `F03B13` |
+
+Al **enviar el cheque al banco**, JDE registra el **nº de batch** en
+`Referencia 1` (`R1`) de la conciliación manual; y en la consulta de efectos ese
+mismo batch es el campo `ICU`.
+
+## ✅ Decisión para la app de control
+
+**El número de batch de JDE es el "número de referencia de valija de depósito"**
+de FinancePro. Se captura al registrar el envío de posfechados al banco y es la
+llave para cruzar la conciliación (junto con el nº de transacción del banco que
+devuelve el depósito).
+
 ## Jerarquía de agrupación (3 niveles)
 
 ```

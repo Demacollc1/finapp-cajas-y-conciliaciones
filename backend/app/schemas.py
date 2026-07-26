@@ -280,7 +280,11 @@ class RemesaPosfechadosCreate(BaseModel):
     cheque_ids: list[int] = Field(min_length=1)
     # El número que devuelve el banco; puede capturarse ahora o después.
     numero_transaccion_banco: str | None = Field(default=None, max_length=80)
-    referencia_jde: str | None = Field(default=None, max_length=60)
+    # Nº de batch de JDE = nuestro número de referencia de valija de depósito.
+    referencia_jde: str | None = Field(
+        default=None, max_length=60,
+        description="Número de batch de JDE (referencia de la valija de depósito)",
+    )
     usuario: str | None = None
 
 
