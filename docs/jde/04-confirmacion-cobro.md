@@ -61,10 +61,16 @@ Paso 3  Envío     Debe 1.110209.03  / Haber 1.110209.02   (cartera → consigna
 Paso 4  Cobro     Debe Bancos       / Haber 1.110209.03   (consigna → bancos)  [esperado, batch 671259]
 ```
 
+## Cruce con la conciliación bancaria
+
+El cruce de campos entre `F0911` (conciliación) y `F03B13` (recepción) está
+documentado en [cruce-f0911-f03b13.md](cruce-f0911-f03b13.md): las llaves son el
+**documento RC** (exacto) y el **nº de batch** (agregado).
+
 ## Preguntas abiertas
 
-1. ¿Qué **programa/reporte** ejecuta la confirmación de cheques posfechados?
-   (¿colección/confirmación de efectos, tipo `R03B680`?)
+1. ~~¿Qué programa ejecuta la confirmación?~~ **Confirmado:** `R03B680`
+   (visto en `F03B13.ID programa` con estado `E E` = `0`).
 2. ¿El batch **`671259`** genera el **asiento a Bancos**
    (`Debe Bancos / Haber 1.110209.03`)? → aportar el `R09801` de `671259`.
 3. ¿La confirmación se **dispara desde la conciliación** (cuando el banco

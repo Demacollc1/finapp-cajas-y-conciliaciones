@@ -18,10 +18,12 @@ para automatizarlo.
 
 > Documento vivo: se irá ampliando con cada paso que analicemos.
 
-**Decisión de diseño transversal:**
-[Referencia y vinculación bancaria](vinculacion-bancaria.md)
-— usar el **nº de `Batch`** como referencia del depósito, campo de vinculación y
-acumulador de la conciliación (`Batch` ⊃ `DREG` ⊃ efecto).
+**Notas transversales:**
+- [Referencia y vinculación bancaria](vinculacion-bancaria.md) — usar el nº de
+  `Batch` como referencia del depósito, campo de vinculación y acumulador
+  (`Batch` ⊃ `DREG` ⊃ efecto).
+- [Cruce F0911 ↔ F03B13](cruce-f0911-f03b13.md) — llaves para vincular la
+  conciliación bancaria con la recepción de cheques (documento **RC** + **batch**).
 
 ## Ciclo del efecto (cheque posfechado)
 
