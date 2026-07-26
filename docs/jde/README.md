@@ -7,7 +7,9 @@ Cada paso describe: qué acción operativa ocurre, qué **tablas** de JDE se
 afectan, qué **objetos** se crean (documentos, batches, IDs) y qué se necesita
 para automatizarlo.
 
-## Pasos
+## Procesos
+
+### A. Cheques posfechados (efectos)
 
 | # | Proceso | Estado | Doc |
 |---|---------|--------|-----|
@@ -15,6 +17,15 @@ para automatizarlo.
 | 2 | Registro / remesa de efectos (asignación del registro) | En análisis | [02-registro-remesa-efectos.md](02-registro-remesa-efectos.md) |
 | 3 | Envío de efectos al banco (`R03B672`, estado 4→3, `R1`→`R2`) | En análisis | [03-envio-efectos-banco.md](03-envio-efectos-banco.md) |
 | 4 | Confirmación de cobro (cheque cobrado en el banco, estado 3→0) | En análisis | [04-confirmacion-cobro.md](04-confirmacion-cobro.md) |
+
+Explicativo no técnico para contabilidad:
+[resumen-posfechados-contabilidad.md](resumen-posfechados-contabilidad.md).
+
+### B. Cobros en caja (efectivo)
+
+| Proceso | Estado | Doc |
+|---------|--------|-----|
+| Cobros en caja de los locales → depósito al banco (asiento `CZ`) | En análisis | [cobros-caja-locales.md](cobros-caja-locales.md) |
 
 > Documento vivo: se irá ampliando con cada paso que analicemos.
 
