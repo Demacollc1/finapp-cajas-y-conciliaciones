@@ -83,6 +83,9 @@ BATCH  (transacción contable = referencia bancaria, p. ej. 671256)  → total 9
   conciliación con aprobación humana), y habría que evaluar otro identificador
   que sí viaje al extracto (p. ej. el nº de depósito de la máquina).
 
+> Borrador de correo para el operador de la máquina de depósitos:
+> [email-consulta-deposito-banco.md](email-consulta-deposito-banco.md).
+
 ## Plan B (implementado en la app) — capturar el nº de transacción del banco
 
 Independientemente de si el banco permite llevar **nuestra** referencia (el nº de
