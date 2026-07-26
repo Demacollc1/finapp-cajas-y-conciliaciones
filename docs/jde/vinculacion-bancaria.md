@@ -15,6 +15,18 @@ envío al banco (p. ej. `671256`) — como:
 > `Batch` puede contener varios `DREG`) y así el depósito bancario cuadra 1:1 con
 > el asiento (`R09801`).
 
+> **⚠️ Ojo — hay dos batches distintos** (ver
+> [cruce-f0911-f03b13.md](cruce-f0911-f03b13.md)):
+> - **Batch de ENVÍO** (remesa `R03B672`, p. ej. `2940589`): el depósito físico;
+>   es lo que ve el **extracto del banco**. Es el que debería ir como referencia
+>   en el banco.
+> - **Batch de COBRO** (`R03B680`, p. ej. `2940597`): el asiento interno de banco;
+>   es el que aparece en **`F0911R`** (la conciliación interna de JDE).
+>
+> El batch de envío **no** está en `F0911R`. Para conciliar internamente se
+> agrupa por el batch de cobro o por el documento `RC`; falta confirmar si un
+> batch de envío se cobra siempre en un único batch de cobro.
+
 ## Jerarquía de agrupación (3 niveles)
 
 ```
