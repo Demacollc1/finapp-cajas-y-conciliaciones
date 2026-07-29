@@ -29,6 +29,7 @@
   --radius:12px;
   --radius-sm:8px;
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  color-scheme:light;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
@@ -49,6 +50,7 @@
     --neg:#f28b82; --neg-soft:#3a1c1c;
     --info:#4dd0e1; --info-soft:#123033;
     --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35);
+    color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
@@ -69,6 +71,7 @@
   --neg:#f28b82; --neg-soft:#3a1c1c;
   --info:#4dd0e1; --info-soft:#123033;
   --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35);
+  color-scheme:dark;
 }
 
 *{box-sizing:border-box}
@@ -232,6 +235,10 @@ td.strong{color:var(--ink);font-weight:600}
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
 .toolbar select,.toolbar input{padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);font-size:13.5px;font-family:inherit}
 .toolbar .spacer{flex:1}
+.month-nav{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.month-nav input[type="month"]{padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);font-size:13.5px;font-family:inherit;font-variant-numeric:tabular-nums}
+.month-nav input[type="month"]:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
 
 /* ============ Modal ============ */
 .modal-root{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
@@ -444,7 +451,21 @@ td.strong{color:var(--ink);font-weight:600}
 
       <!-- REPORTES -->
       <section id="view-reportes" class="view">
-        <div class="section-head"><h2>Reportes</h2><div class="spacer"></div><span class="hint">Acumulado histórico</span></div>
+        <div class="section-head">
+          <h2>Reportes</h2>
+          <div class="spacer"></div>
+          <div class="month-nav">
+            <button class="btn btn-ghost icon-btn btn-sm" id="rep-prev" aria-label="Mes anterior">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <input type="month" id="rep-month" aria-label="Mes del reporte">
+            <button class="btn btn-ghost icon-btn btn-sm" id="rep-next" aria-label="Mes siguiente">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+            <button class="btn btn-ghost btn-sm" id="rep-cur">Mes actual</button>
+          </div>
+        </div>
+        <div class="hint" id="rep-caption" style="margin:-6px 0 16px"></div>
         <div class="kpis" id="rep-kpis" style="margin-bottom:8px"></div>
         <div class="report-grid" style="margin-top:22px">
           <div class="card" style="padding:20px">
@@ -480,7 +501,7 @@ function fmtDate(iso){
 const METODOS = {efectivo:'Efectivo', transferencia:'Transferencia', tarjeta:'Tarjeta'};
 
 /* ============ Estado / persistencia ============ */
-const KEY='finapp_demaco_v1';
+const KEY='finapp_demaco_v2';
 let state = {cajas:[],movimientos:[],conciliaciones:[]};
 
 function save(){ try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){} }
@@ -525,6 +546,16 @@ function seed(){
 
     M('c4',6,'ingreso','Venta bodega #305','efectivo',540.00),
     M('c4',5,'egreso','Pago estibadores','efectivo',60.00),
+
+    // — mes anterior (para consultar por mes) —
+    M('c1',34,'ingreso','Venta mostrador #0987','efectivo',380.00),
+    M('c1',33,'egreso','Pago proveedor FA-0880','transferencia',540.00),
+    M('c1',31,'ingreso','Cobro factura FA-0902','transferencia',920.00),
+    M('c2',38,'ingreso','Venta mostrador #2150','efectivo',210.00),
+    M('c2',36,'ingreso','Venta mostrador #2158','tarjeta',175.00),
+    M('c2',35,'egreso','Pago servicios básicos','transferencia',72.40),
+    M('c3',41,'egreso','Compra insumos oficina','efectivo',29.90),
+    M('c4',45,'ingreso','Venta bodega #290','efectivo',300.00),
   ];
   const conc = [
     {id:uid(),cajaId:'c4',fecha:d(5),saldoTeorico:630.00,saldoReal:625.00,diferencia:-5.00,estado:'faltante',nota:'Faltante menor en cierre de bodega'},
@@ -551,13 +582,25 @@ function cajasPendientes(){
     !state.conciliaciones.some(r=>r.cajaId===c.id && r.fecha===hoy));
 }
 
+// Helpers de mes (Reportes)
+function currentYM(){ const n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0'); }
+function shiftMonth(ym,delta){ const [y,m]=ym.split('-').map(Number); const dt=new Date(y,m-1+delta,1); return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0'); }
+function monthLabel(ym){ const [y,m]=ym.split('-').map(Number); return new Date(y,m-1,1).toLocaleDateString('es-EC',{month:'long',year:'numeric'}); }
+function endOfMonthISO(ym){ const [y,m]=ym.split('-').map(Number); const dt=new Date(y,m,0); return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); }
+// Saldo de efectivo acumulado hasta el cierre de una fecha (inclusive)
+function saldoEfectivoHasta(id,endISO){
+  const c=cajaById(id); if(!c) return 0;
+  return movsDe(id).filter(m=>m.metodo==='efectivo' && m.fecha<=endISO)
+    .reduce((s,m)=> s + (m.tipo==='ingreso'? m.monto : -m.monto), c.saldoInicial);
+}
+
 /* ============ Router ============ */
 const TITLES={
   panel:['Panel','Resumen de cajas y movimientos'],
   cajas:['Cajas','Administración de puntos de efectivo'],
   movimientos:['Movimientos','Ingresos y egresos registrados'],
   conciliacion:['Conciliación','Arqueo de caja: teórico vs. físico'],
-  reportes:['Reportes','Análisis acumulado'],
+  reportes:['Reportes','Análisis mensual de cajas y movimientos'],
 };
 function go(view){
   $$('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
@@ -687,31 +730,51 @@ function renderReconHistory(){
   }).join('') : `<tr><td colspan="7" class="empty">Aún no se ha registrado ninguna conciliación</td></tr>`;
 }
 
+let repMonth = currentYM();
 function renderReportes(){
-  const ingresos=state.movimientos.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+m.monto,0);
-  const egresos=state.movimientos.filter(m=>m.tipo==='egreso').reduce((s,m)=>s+m.monto,0);
-  const efectivo=state.cajas.reduce((s,c)=>s+saldoEfectivo(c.id),0);
+  const ym = repMonth;
+  const endISO = endOfMonthISO(ym);
+  const esActual = ym === currentYM();
+  const inMonth = state.movimientos.filter(m => m.fecha.slice(0,7) === ym);
+  const ingresos = inMonth.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+m.monto,0);
+  const egresos  = inMonth.filter(m=>m.tipo==='egreso').reduce((s,m)=>s+m.monto,0);
+  const efectivoCierre = state.cajas.reduce((s,c)=>s+saldoEfectivoHasta(c.id,endISO),0);
+
+  // selector de mes
+  const mInput=$('#rep-month');
+  mInput.max=currentYM();
+  if(mInput.value!==ym) mInput.value=ym;
+  $('#rep-next').disabled = ym>=currentYM();
+  const ml=monthLabel(ym), mlCap=ml.charAt(0).toUpperCase()+ml.slice(1);
+  $('#rep-caption').innerHTML =
+    `<b style="color:var(--ink)">${mlCap}</b>` +
+    (esActual? ' · <span style="color:var(--accent);font-weight:600">mes actual</span>' : '') +
+    ` · ${inMonth.length} movimiento${inMonth.length!==1?'s':''}` +
+    (inMonth.length===0? ' — sin registros en este mes' : '');
+
   const kpis=[
-    {lbl:'Total ingresos', val:money(ingresos), cls:'amt-pos', ico:'<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>'},
-    {lbl:'Total egresos', val:money(egresos), cls:'amt-neg', ico:'<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>'},
-    {lbl:'Flujo neto', val:money(ingresos-egresos), cls:'', ico:'<path d="M7 7h13"/><path d="m17 4 3 3-3 3"/><path d="M17 17H4"/><path d="m7 20-3-3 3-3"/>'},
-    {lbl:'Efectivo disponible', val:money(efectivo), cls:'', ico:'<rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/>'},
+    {lbl:'Ingresos del mes', val:money(ingresos), cls:'amt-pos', ico:'<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>'},
+    {lbl:'Egresos del mes', val:money(egresos), cls:'amt-neg', ico:'<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>'},
+    {lbl:'Flujo neto del mes', val:money(ingresos-egresos), cls:'', ico:'<path d="M7 7h13"/><path d="m17 4 3 3-3 3"/><path d="M17 17H4"/><path d="m7 20-3-3 3-3"/>'},
+    {lbl: esActual?'Efectivo disponible':'Efectivo al cierre', val:money(efectivoCierre), cls:'',
+      ico:'<rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/>',
+      meta: esActual?'Saldo actual':('Al '+fmtDate(endISO))},
   ];
   $('#rep-kpis').innerHTML=kpis.map(k=>`
     <div class="kpi"><div class="lbl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${k.ico}</svg>${k.lbl}</div>
-    <div class="val tnum ${k.cls}">${k.val}</div></div>`).join('');
+    <div class="val tnum ${k.cls}">${k.val}</div>${k.meta?`<div class="meta">${k.meta}</div>`:''}</div>`).join('');
 
-  // efectivo por caja
-  const cajas=state.cajas.map(c=>({nombre:c.nombre,val:Math.max(saldoEfectivo(c.id),0)}));
+  // efectivo por caja (saldo al cierre del mes seleccionado)
+  const cajas=state.cajas.map(c=>({nombre:c.nombre,val:Math.max(saldoEfectivoHasta(c.id,endISO),0)}));
   const maxC=Math.max(1,...cajas.map(c=>c.val));
   $('#rep-cajas').innerHTML = cajas.length? cajas.map(c=>`
     <div class="bar-row"><div class="nm">${esc(c.nombre)}</div>
       <div class="bar-track"><div class="bar-fill" style="width:${(c.val/maxC*100).toFixed(1)}%"></div></div>
       <div class="amt">${money(c.val)}</div></div>`).join('') : `<div class="empty">Sin datos</div>`;
 
-  // por método
+  // movimientos por método (dentro del mes)
   const met={};
-  state.movimientos.forEach(m=>{ met[m.metodo]=(met[m.metodo]||0)+m.monto; });
+  inMonth.forEach(m=>{ met[m.metodo]=(met[m.metodo]||0)+m.monto; });
   const totalMet=Object.values(met).reduce((a,b)=>a+b,0)||1;
   $('#rep-metodos').innerHTML = Object.keys(METODOS).map(k=>{
     const v=met[k]||0;
@@ -866,6 +929,12 @@ $('#btn-save-recon').addEventListener('click',()=>{
   state.conciliaciones.push({id:uid(),cajaId:id,fecha:$('#rc-fecha').value||todayISO(),saldoTeorico:teorico,saldoReal:real,diferencia:diff,estado,nota:$('#rc-nota').value.trim()});
   save(); renderAll(); resetReconForm(); toast('Conciliación registrada');
 });
+
+// reportes por mes
+$('#rep-prev').addEventListener('click',()=>{ repMonth=shiftMonth(repMonth,-1); renderReportes(); });
+$('#rep-next').addEventListener('click',()=>{ if(repMonth<currentYM()){ repMonth=shiftMonth(repMonth,1); renderReportes(); } });
+$('#rep-month').addEventListener('change',e=>{ if(e.target.value){ repMonth = e.target.value>currentYM()? currentYM() : e.target.value; renderReportes(); } });
+$('#rep-cur').addEventListener('click',()=>{ repMonth=currentYM(); renderReportes(); });
 
 // reset datos
 $('#btn-reset').addEventListener('click',()=>{
